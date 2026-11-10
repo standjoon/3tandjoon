@@ -236,7 +236,7 @@
         const materialsData = [
             { id: 'concrete', name: '노출 콘크리트', category: 'Concrete', color: 0x888888, roughness: 0.8, metalness: 0.1, desc: '거푸집 해체 후 원연의 질감을 살려 모던하고 중후한 물성을 제공.', range: '외관 파사드, 거실 포인트 벽체, 로비' },
             { id: 'wood_dark', name: '다크 월넛 우드', category: 'Wood', color: 0x3d2817, roughness: 0.5, metalness: 0.05, desc: '깊이감 있는 월넛 원목 질감으로 고급스러운 공간 분위기를 연출.', range: '임원실 벽체, 바닥재, 고급 가구' },
-            { id: 'wood_light', name: '내추럴 오크 우드', category: 'Wood', color: 0xd4a373, roughness: 0.6, metalness: 0.05, desc: '밝고 따뜻한 오크 톤으로 공간을 화사하고 넓어 보이게 조성.', range: '주거용 마루, 벽체 루버 마감' },
+            { id: 'wood_light', name: '내추럴 오크 우드', category: 'Wood', color: 0xd4a373, roughness: 0.6, metalness: 0.05, desc: '밝고 따뜻한 오크 톤으로 공간을 화사하고 넓어 보이게 조성.', range: '주거용 마루, 벽체 루버 마감', texturePath: 'textures/oak_veneer_01_diff_2k.jpg' },
             { id: 'terrazzo', name: '화이트 테라조', category: 'Stone', color: 0xededed, roughness: 0.3, metalness: 0.1, desc: '다채로운 골재 조각이 믹스되어 세련된 모던 인테리어에 적합.', range: '로비 바닥, 카운터 상판' },
             { id: 'metal_dark', name: '다크 스틸 메탈', category: 'Metal', color: 0x222225, roughness: 0.2, metalness: 0.9, desc: '시크하고 차가운 메탈 질감으로 강렬한 대비와 포인트를 부여.', range: '프레임 구조물, 외부 루버' },
             { id: 'marble', name: '비앙코 대리석', category: 'Stone', color: 0xf5f5f5, roughness: 0.15, metalness: 0.2, desc: '클래식하고 화려한 패턴으로 하이엔드 공간에 필수적인 석재.', range: '아트월, 욕실 벽체' },
@@ -340,11 +340,19 @@
             dir.position.set(5, 5, 5);
             detailScene.add(dir);
 
-            detailMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshStandardMaterial({
-                color: matData.color,
+            let materialOptions = {
                 roughness: matData.roughness,
                 metalness: matData.metalness
-            }));
+            };
+
+            if (matData.texturePath) {
+                const textureLoader = new THREE.TextureLoader();
+                materialOptions.map = textureLoader.load(matData.texturePath);
+            } else {
+                materialOptions.color = matData.color;
+            }
+
+            detailMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshStandardMaterial(materialOptions));
             detailScene.add(detailMesh);
 
             let isDrag = false, prevMouse = { x: 0, y: 0 };
