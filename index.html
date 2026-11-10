@@ -56,7 +56,7 @@
                     <h2 class="text-2xl font-bold tracking-tight text-zinc-900 uppercase tracking-widest">Material Spec Book</h2>
                     <p class="text-xs text-zinc-400 mt-1 uppercase tracking-wider">Architectural & Interior Finish Samples</p>
                 </div>
-                <!-- 👉 가로 최대 5개 그리드 배치 -->
+                <!-- 가로 최대 5개 그리드 배치 -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10" id="material-card-grid"></div>
             </div>
 
@@ -311,16 +311,21 @@
             grid.innerHTML = '';
             materialsData.forEach((mat, idx) => {
                 const card = document.createElement('div');
-                // 👉 테두리와 불필요한 장식을 걷어낸 미니멀한 스펙 북 카드 스타일
                 card.className = 'cursor-pointer group flex flex-col space-y-2';
                 card.onclick = () => openMaterialDetail(mat);
 
-                // 사각형 썸네일 칩 (이미지 레퍼런스 스타일)
                 const colorBox = document.createElement('div');
                 colorBox.className = 'w-full aspect-square bg-zinc-100 border border-zinc-200 group-hover:border-zinc-900 transition-colors duration-200 overflow-hidden relative shadow-sm';
-                colorBox.style.backgroundColor = '#' + mat.color.toString(16).padStart(6, '0');
+                
+                // 👉 텍스처 파일이 있는 자재(내추럴 오크 등)는 해당 이미지를 썸네일 배경으로 적용, 없으면 기존 단색 컬러 유지
+                if (mat.texturePath) {
+                    colorBox.style.backgroundImage = `url('${mat.texturePath}')`;
+                    colorBox.style.backgroundSize = 'cover';
+                    colorBox.style.backgroundPosition = 'center';
+                } else {
+                    colorBox.style.backgroundColor = '#' + mat.color.toString(16).padStart(6, '0');
+                }
 
-                // 텍스트 스펙 정보 (카테고리 / 브랜드 / 자재명 3단 구조)
                 const info = document.createElement('div');
                 info.className = 'space-y-0.5 pt-1';
                 info.innerHTML = `
