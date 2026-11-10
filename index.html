@@ -16,7 +16,7 @@
 <body class="bg-white text-zinc-900 h-screen flex flex-col overflow-hidden">
 
     <!-- Global Navigation Bar -->
-    <header class="h-16 border-b border-zinc-200 bg-white/85 backdrop-blur-md px-8 flex items-center justify-between z-50 shrink-0">
+    <header class="h-16 border-b border-zinc-200 bg-white/90 backdrop-blur-md px-8 flex items-center justify-between z-50 shrink-0">
         <div class="flex items-center gap-3 cursor-pointer" onclick="switchPage('home')">
             <span class="w-3 h-3 rounded-full bg-zinc-900"></span>
             <span class="font-bold tracking-tight text-zinc-900">ARCHIVE & SPACE</span>
@@ -35,7 +35,7 @@
     <main class="flex-1 relative overflow-hidden bg-zinc-50">
 
         <!-- 1. HOME PAGE -->
-        <section id="page-home" class="page absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white">
+        <section id="page-home" class="page absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white z-20">
             <div class="max-w-2xl space-y-6">
                 <span class="inline-block px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-semibold uppercase tracking-wider">Architectural Design Archive</span>
                 <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-900">공간과 재질을 기록하고,<br>시뮬레이션하다.</h1>
@@ -50,7 +50,7 @@
         </section>
 
         <!-- 2. MATERIAL PAGE -->
-        <section id="page-material" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8">
+        <section id="page-material" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8 z-20 bg-zinc-50">
             <div id="material-list-view" class="max-w-6xl mx-auto w-full space-y-8">
                 <div>
                     <h2 class="text-2xl font-bold tracking-tight text-zinc-900">Material Library</h2>
@@ -107,7 +107,7 @@
         </section>
 
         <!-- 3. 3D MAPPING PAGE -->
-        <section id="page-mapping" class="page absolute inset-0 hidden flex">
+        <section id="page-mapping" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200">
                     <h2 class="text-lg font-bold text-zinc-900">3D Space Mapping</h2>
@@ -135,7 +135,7 @@
         </section>
 
         <!-- 4. EXHIBITION PAGE -->
-        <section id="page-exhibition" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8">
+        <section id="page-exhibition" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8 z-20 bg-zinc-50">
             <div class="max-w-6xl mx-auto w-full space-y-8">
                 <div class="flex items-center justify-between">
                     <div>
@@ -162,7 +162,7 @@
         </section>
 
         <!-- 5. INTERIOR PAGE -->
-        <section id="page-interior" class="page absolute inset-0 hidden flex">
+        <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200">
                     <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
@@ -241,7 +241,7 @@
         ];
 
         let currentActivePage = 'home';
-        let isGlobalPBR = true; // 기본값 PBR ON
+        let isGlobalPBR = true;
 
         let detailAnimId = null;
         let mapAnimId = null;
@@ -277,13 +277,21 @@
             }
 
             currentActivePage = pageId;
-            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.add('hidden');
+                p.style.display = 'none';
+            });
+
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.className = 'nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition text-zinc-600';
             });
 
-            document.getElementById(`page-${pageId}`).classList.remove('hidden');
-            document.getElementById(`page-${pageId}`).style.display = 'flex';
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                targetPage.style.display = 'flex';
+            }
             
             const activeNav = document.getElementById(`nav-${pageId}`);
             if(activeNav) activeNav.className = 'nav-btn px-3 py-1.5 rounded-lg text-zinc-900 font-semibold transition bg-zinc-100';
@@ -362,12 +370,12 @@
             detailRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(detailRenderer.domElement);
 
-            // 👉 야간 모드일 때 주변광은 극도로 어둡게(0.05), 좌측 상단 핀조명(DirectionalLight)은 강하게(2.8) 배치
-            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.05 : 0.7);
+            // 👉 야간 모드 조정: 너무 어둡지 않게 주변광(0.25)을 살짝 올리고, 너무 뜨지 않게 핀조명 강도(1.6)를 적절히 다운
+            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.25 : 0.7);
             detailScene.add(detailAmbientLight);
 
-            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 2.8 : 1.2); 
-            detailDirLight.position.set(-4, 5, 4); // X:-4(좌측), Y:5(상단), Z:4(앞쪽) -> 좌측 상단 핀조명 연출!
+            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 1.6 : 1.2); 
+            detailDirLight.position.set(-4, 5, 4); 
             detailScene.add(detailDirLight);
 
             let materialOptions = {
@@ -416,10 +424,10 @@
             const btn = document.getElementById('mat-env-btn');
             if(isDetailNight) {
                 if(detailScene) detailScene.background = new THREE.Color(0x020203);
-                if(detailAmbientLight) detailAmbientLight.intensity = 0.05; // 주변광 거의 차단
+                if(detailAmbientLight) detailAmbientLight.intensity = 0.25; // 덜 어둡게 (0.05 -> 0.25)
                 if(detailDirLight) {
-                    detailDirLight.intensity = 2.8;                          // 좌측 상단 핀조명 강조
-                    detailDirLight.position.set(-4, 5, 4);                   // 좌측 상단 위치 고정
+                    detailDirLight.intensity = 1.6;                          // 덜 밝게/안 뜨게 (2.8 -> 1.6)
+                    detailDirLight.position.set(-4, 5, 4);
                 }
                 btn.innerText = '🌙 야간 간접조명';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow';
@@ -428,7 +436,7 @@
                 if(detailAmbientLight) detailAmbientLight.intensity = 0.7;
                 if(detailDirLight) {
                     detailDirLight.intensity = 1.2;
-                    detailDirLight.position.set(5, 5, 5);                   // 주간 채광 기본 위치로 복원
+                    detailDirLight.position.set(5, 5, 5);
                 }
                 btn.innerText = '☀️ 주간 채광';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition shadow';
@@ -744,6 +752,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             initMaterialList();
+            switchPage('home');
         });
 
         window.addEventListener('resize', () => {
