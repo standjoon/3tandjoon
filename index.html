@@ -28,14 +28,7 @@
             <button onclick="switchPage('exhibition')" id="nav-exhibition" class="nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition">Exhibition</button>
             <button onclick="switchPage('interior')" id="nav-interior" class="nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition">Interior</button>
         </nav>
-
-        <!-- Global PBR Mode Toggle -->
-        <div class="flex items-center gap-2 bg-zinc-100 px-3 py-1.5 rounded-xl border border-zinc-200">
-            <span class="text-xs font-semibold text-zinc-600">PBR 렌더 모드</span>
-            <button onclick="toggleGlobalPBR()" id="global-pbr-btn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-zinc-300 text-zinc-700 transition shadow-inner">
-                OFF (기본)
-            </button>
-        </div>
+        <div></div>
     </header>
 
     <!-- Main View Container (Pages) -->
@@ -89,6 +82,7 @@
                         </div>
                     </div>
 
+                    <!-- 3D 뷰어 검정 박스 (우측 하단 PBR 토글) -->
                     <div class="lg:col-span-2 bg-zinc-950 rounded-2xl relative h-[450px] overflow-hidden shadow-inner flex flex-col">
                         <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-300">
                             <span>💡 마우스 드래그로 회전 가능</span>
@@ -98,6 +92,14 @@
                                 ☀️ 주간 채광
                             </button>
                         </div>
+                        
+                        <div class="absolute bottom-4 right-4 z-10 flex items-center gap-2 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 shadow-lg">
+                            <span class="text-[11px] font-semibold text-zinc-400">PBR 렌더</span>
+                            <button onclick="toggleGlobalPBR()" id="global-pbr-btn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-500 text-zinc-950 transition shadow-inner">
+                                ON (PBR 렌더)
+                            </button>
+                        </div>
+
                         <div id="material-canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
                     </div>
                 </div>
@@ -159,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (Room Surface & Furniture Customization) -->
+        <!-- 5. INTERIOR PAGE -->
         <section id="page-interior" class="page absolute inset-0 hidden flex">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200">
@@ -168,11 +170,8 @@
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-4 space-y-6">
-                    <!-- Room Surface Customizer -->
                     <div class="space-y-3 pb-4 border-b border-zinc-200">
                         <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">방 구조물 마감 (바닥/벽)</label>
-                        
-                        <!-- Floor Custom -->
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
                             <span class="text-xs font-bold text-zinc-800">바닥 (Floor)</span>
                             <div class="flex items-center gap-1.5">
@@ -183,7 +182,6 @@
                             </div>
                         </div>
 
-                        <!-- Wall Custom -->
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
                             <span class="text-xs font-bold text-zinc-800">벽체 (Walls)</span>
                             <div class="flex items-center gap-1.5">
@@ -195,7 +193,6 @@
                         </div>
                     </div>
 
-                    <!-- Add Furniture Objects -->
                     <div>
                         <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">가구 / 오브젝트 추가</label>
                         <div class="grid grid-cols-2 gap-2">
@@ -206,7 +203,6 @@
                         </div>
                     </div>
 
-                    <!-- Active Furniture List & Independent Customization -->
                     <div class="space-y-3">
                         <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 개별 관리</label>
                         <div id="interior-objects-list" class="space-y-3">
@@ -245,7 +241,12 @@
         ];
 
         let currentActivePage = 'home';
-        let isGlobalPBR = false;
+        let isGlobalPBR = true; // 기본값 PBR ON
+
+        // 애니메이션 ID 관리 변수 (페이지 전환 시 렉 방지용)
+        let detailAnimId = null;
+        let mapAnimId = null;
+        let intAnimId = null;
 
         function toggleGlobalPBR() {
             isGlobalPBR = !isGlobalPBR;
@@ -257,13 +258,26 @@
                 btn.innerText = 'OFF (기본)';
                 btn.className = 'px-2.5 py-1 text-[11px] font-bold rounded-lg bg-zinc-300 text-zinc-700 transition shadow-inner';
             }
-            // 현재 상세 뷰어가 켜져 있다면 PBR 토글 상태 반영하여 다시 로드
             if (currentMaterialData) {
                 initDetailViewer(currentMaterialData);
             }
         }
 
         function switchPage(pageId) {
+            // 1. 다른 페이지로 넘어갈 때 이전 3D 페이지의 애니메이션 루프 강제 정지 & 메모리 정리
+            if (currentActivePage === 'material' && pageId !== 'material') {
+                if (detailAnimId) cancelAnimationFrame(detailAnimId);
+                disposeDetailViewer();
+            }
+            if (currentActivePage === 'mapping' && pageId !== 'mapping') {
+                if (mapAnimId) cancelAnimationFrame(mapAnimId);
+                disposeMappingViewer();
+            }
+            if (currentActivePage === 'interior' && pageId !== 'interior') {
+                if (intAnimId) cancelAnimationFrame(intAnimId);
+                disposeInteriorViewer();
+            }
+
             currentActivePage = pageId;
             document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -275,6 +289,10 @@
             
             const activeNav = document.getElementById(`nav-${pageId}`);
             if(activeNav) activeNav.className = 'nav-btn px-3 py-1.5 rounded-lg text-zinc-900 font-semibold transition bg-zinc-100';
+
+            // 페이지 진입 시 해당 3D 뷰어 재초기화
+            if (pageId === 'mapping') initMapping3D();
+            if (pageId === 'interior') initInterior3D();
 
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
         }
@@ -324,12 +342,15 @@
         }
 
         function closeMaterialDetail() {
+            if (detailAnimId) cancelAnimationFrame(detailAnimId);
+            disposeDetailViewer();
             currentMaterialData = null;
             document.getElementById('material-detail-view').classList.add('hidden');
             document.getElementById('material-list-view').classList.remove('hidden');
         }
 
         function initDetailViewer(matData) {
+            if (detailAnimId) cancelAnimationFrame(detailAnimId);
             const container = document.getElementById('material-canvas-container');
             container.innerHTML = '';
 
@@ -344,12 +365,11 @@
             detailRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(detailRenderer.domElement);
 
-            // 조명 설정 (주간/야간 모드 반영)
-            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.3 : 0.7);
+            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.15 : 0.7);
             detailScene.add(detailAmbientLight);
 
-            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 0.5 : 1.2);
-            detailDirLight.position.set(5, 5, 5);
+            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 2.2 : 1.2); 
+            detailDirLight.position.set(5, 4, 3);
             detailScene.add(detailDirLight);
 
             let materialOptions = {
@@ -357,7 +377,6 @@
                 metalness: matData.metalness
             };
 
-            // PBR 렌더 모드가 켜져 있거나 텍스처 경로가 있는 경우 텍스처 적용
             if (isGlobalPBR && matData.texturePath) {
                 const textureLoader = new THREE.TextureLoader();
                 materialOptions.map = textureLoader.load(matData.texturePath);
@@ -379,10 +398,19 @@
             window.onmouseup = () => { isDrag = false; };
 
             function animateDetail() {
-                requestAnimationFrame(animateDetail);
+                detailAnimId = requestAnimationFrame(animateDetail);
                 detailRenderer.render(detailScene, detailCamera);
             }
             animateDetail();
+        }
+
+        function disposeDetailViewer() {
+            if (detailRenderer) {
+                detailRenderer.dispose();
+                detailRenderer = null;
+            }
+            detailScene = null;
+            detailMesh = null;
         }
 
         function toggleMaterialEnv() {
@@ -390,8 +418,8 @@
             const btn = document.getElementById('mat-env-btn');
             if(isDetailNight) {
                 if(detailScene) detailScene.background = new THREE.Color(0x020203);
-                if(detailAmbientLight) detailAmbientLight.intensity = 0.3;
-                if(detailDirLight) detailDirLight.intensity = 0.5;
+                if(detailAmbientLight) detailAmbientLight.intensity = 0.15;
+                if(detailDirLight) detailDirLight.intensity = 2.2;
                 btn.innerText = '🌙 야간 간접조명';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow';
             } else {
@@ -410,7 +438,8 @@
 
         function initMapping3D() {
             const container = document.getElementById('mapping-canvas-container');
-            if(container.childElementCount > 0) return;
+            container.innerHTML = '';
+            if (mapAnimId) cancelAnimationFrame(mapAnimId);
 
             mapScene = new THREE.Scene();
             mapScene.background = new THREE.Color(0x09090b);
@@ -445,6 +474,7 @@
             mapScene.add(mapAccentMesh);
 
             const grid = document.getElementById('mapping-material-grid');
+            grid.innerHTML = '';
             materialsData.forEach(mat => {
                 const card = document.createElement('div');
                 card.className = 'cursor-pointer bg-zinc-950 border border-zinc-800 rounded-xl p-3 hover:border-amber-500 transition flex flex-col items-center gap-2 text-center';
@@ -474,21 +504,29 @@
             }
             updateCam();
 
-            container.addEventListener('mousedown', e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; });
-            window.addEventListener('mousemove', e => {
+            container.onmousedown = e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; };
+            window.onmousemove = e => {
                 if(!isDrag || currentActivePage !== 'mapping') return;
                 theta -= (e.clientX - prevMouse.x) * 0.008;
                 phi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, phi - (e.clientY - prevMouse.y) * 0.008));
                 updateCam();
                 prevMouse = {x: e.clientX, y: e.clientY};
-            });
-            window.addEventListener('mouseup', () => isDrag = false);
+            };
+            window.onmouseup = () => isDrag = false;
 
             function animateMap() {
-                requestAnimationFrame(animateMap);
+                mapAnimId = requestAnimationFrame(animateMap);
                 mapRenderer.render(mapScene, mapCamera);
             }
             animateMap();
+        }
+
+        function disposeMappingViewer() {
+            if (mapRenderer) {
+                mapRenderer.dispose();
+                mapRenderer = null;
+            }
+            mapScene = null;
         }
 
         function setMappingTarget(target) {
@@ -531,7 +569,8 @@
 
         function initInterior3D() {
             const container = document.getElementById('interior-canvas-container');
-            if(container.childElementCount > 0) return;
+            container.innerHTML = '';
+            if (intAnimId) cancelAnimationFrame(intAnimId);
 
             intScene = new THREE.Scene();
             intScene.background = new THREE.Color(0x09090b);
@@ -570,7 +609,11 @@
             intLeftWallMesh.rotation.y = Math.PI / 2;
             intScene.add(intLeftWallMesh);
 
-            addInteriorObject('sofa', '모던 소파');
+            if (interiorItems.length === 0) {
+                addInteriorObject('sofa', '모던 소파');
+            } else {
+                interiorItems.forEach(item => intScene.add(item.mesh));
+            }
 
             let isDrag = false, prevMouse = {x:0, y:0};
             let theta = Math.PI/4, phi = Math.PI/4, radius = 9;
@@ -583,21 +626,29 @@
             }
             updateCam();
 
-            container.addEventListener('mousedown', e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; });
-            window.addEventListener('mousemove', e => {
+            container.onmousedown = e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; };
+            window.onmousemove = e => {
                 if(!isDrag || currentActivePage !== 'interior') return;
                 theta -= (e.clientX - prevMouse.x) * 0.008;
                 phi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, phi - (e.clientY - prevMouse.y) * 0.008));
                 updateCam();
                 prevMouse = {x: e.clientX, y: e.clientY};
-            });
-            window.addEventListener('mouseup', () => isDrag = false);
+            };
+            window.onmouseup = () => isDrag = false;
 
             function animateInt() {
-                requestAnimationFrame(animateInt);
+                intAnimId = requestAnimationFrame(animateInt);
                 intRenderer.render(intScene, intCamera);
             }
             animateInt();
+        }
+
+        function disposeInteriorViewer() {
+            if (intRenderer) {
+                intRenderer.dispose();
+                intRenderer = null;
+            }
+            intScene = null;
         }
 
         function changeRoomSurface(target, colorHex, roughnessVal) {
@@ -630,7 +681,7 @@
             }
 
             if(mesh) {
-                intScene.add(mesh);
+                if(intScene) intScene.add(mesh);
                 interiorItems.push({ id: Date.now(), name: name, mesh: mesh });
                 renderInteriorList();
             }
@@ -639,7 +690,7 @@
         function removeInteriorObject(id) {
             const index = interiorItems.findIndex(item => item.id === id);
             if(index !== -1) {
-                intScene.remove(interiorItems[index].mesh);
+                if(intScene) intScene.remove(interiorItems[index].mesh);
                 interiorItems.splice(index, 1);
                 renderInteriorList();
             }
@@ -689,8 +740,6 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             initMaterialList();
-            initMapping3D();
-            initInterior3D();
         });
 
         window.addEventListener('resize', () => {
