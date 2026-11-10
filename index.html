@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arch-Material & Space Archive</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D views -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-zinc-900 h-screen flex flex-col overflow-hidden">
+
+    <!-- Global Navigation Bar -->
+    <header class="h-16 border-b border-zinc-200 bg-white/85 backdrop-blur-md px-8 flex items-center justify-between z-50 shrink-0">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchPage('home')">
+            <span class="w-3 h-3 rounded-full bg-zinc-900"></span>
+            <span class="font-bold tracking-tight text-zinc-900">ARCHIVE & SPACE</span>
+        </div>
+        <nav class="flex items-center gap-1 sm:gap-6 text-sm font-medium text-zinc-600">
+            <button onclick="switchPage('home')" id="nav-home" class="nav-btn px-3 py-1.5 rounded-lg text-zinc-900 font-semibold transition">Home</button>
+            <button onclick="switchPage('material')" id="nav-material" class="nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition">Material</button>
+            <button onclick="switchPage('mapping')" id="nav-mapping" class="nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition">3D Mapping</button>
+            <button onclick="switchPage('exhibition')" id="nav-exhibition" class="nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition">Exhibition</button>
+            <button onclick="switchPage('interior')" id="nav-interior" class="nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition">Interior</button>
+        </nav>
+
+        <!-- Global PBR Mode Toggle -->
+        <div class="flex items-center gap-2 bg-zinc-100 px-3 py-1.5 rounded-xl border border-zinc-200">
+            <span class="text-xs font-semibold text-zinc-600">PBR 렌더 모드</span>
+            <button onclick="toggleGlobalPBR()" id="global-pbr-btn" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-zinc-300 text-zinc-700 transition shadow-inner">
+                OFF (기본)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main View Container (Pages) -->
+    <main class="flex-1 relative overflow-hidden bg-zinc-50">
+
+        <!-- 1. HOME PAGE -->
+        <section id="page-home" class="page absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white">
+            <div class="max-w-2xl space-y-6">
+                <span class="inline-block px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-semibold uppercase tracking-wider">Architectural Design Archive</span>
+                <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-900">공간과 재질을 기록하고,<br>시뮬레이션하다.</h1>
+                <p class="text-zinc-500 text-sm sm:text-base leading-relaxed">
+                    재질 라이브러리 탐색부터 3D 공간 매핑, 커스텀 인테리어와 전시 아카이빙까지 당신만의 디자인 워크플로우를 경험하세요.
+                </p>
+                <div class="pt-4 flex items-center justify-center gap-4">
+                    <button onclick="switchPage('mapping')" class="px-6 py-3 bg-zinc-900 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition shadow-lg shadow-zinc-900/10">3D 매핑 시작하기</button>
+                    <button onclick="switchPage('material')" class="px-6 py-3 bg-zinc-100 text-zinc-900 text-sm font-semibold rounded-xl hover:bg-zinc-200 transition">재질 라이브러리 보기</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. MATERIAL PAGE -->
+        <section id="page-material" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8">
+            <div id="material-list-view" class="max-w-6xl mx-auto w-full space-y-8">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-zinc-900">Material Library</h2>
+                    <p class="text-sm text-zinc-500 mt-1">건축 및 인테리어에 사용되는 핵심 재질 목록입니다. 재질을 선택하여 상세 특징과 시뮬레이션을 확인하세요.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="material-card-grid"></div>
+            </div>
+
+            <div id="material-detail-view" class="max-w-6xl mx-auto w-full space-y-8 hidden">
+                <button onclick="closeMaterialDetail()" class="text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-zinc-200 w-max shadow-sm">
+                    ← 목록으로 돌아가기
+                </button>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1 space-y-6 bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                        <div>
+                            <span id="detail-category" class="text-xs font-bold text-amber-600 uppercase tracking-wider">Concrete</span>
+                            <h3 id="detail-title" class="text-2xl font-bold text-zinc-900 mt-1">노출 콘크리트</h3>
+                        </div>
+                        <div class="space-y-4 text-sm text-zinc-600">
+                            <div>
+                                <h4 class="font-semibold text-zinc-900 text-xs uppercase tracking-wider mb-1">재질 특징</h4>
+                                <p id="detail-desc" class="leading-relaxed"></p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-zinc-900 text-xs uppercase tracking-wider mb-1">추천 적용 범위</h4>
+                                <p id="detail-range" class="leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-zinc-950 rounded-2xl relative h-[450px] overflow-hidden shadow-inner flex flex-col">
+                        <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-300">
+                            <span>💡 마우스 드래그로 회전 가능</span>
+                        </div>
+                        <div class="absolute top-4 right-4 z-10">
+                            <button onclick="toggleMaterialEnv()" id="mat-env-btn" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition shadow">
+                                ☀️ 주간 채광
+                            </button>
+                        </div>
+                        <div id="material-canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 3D MAPPING PAGE -->
+        <section id="page-mapping" class="page absolute inset-0 hidden flex">
+            <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
+                <div class="p-6 border-b border-zinc-200">
+                    <h2 class="text-lg font-bold text-zinc-900">3D Space Mapping</h2>
+                    <p class="text-xs text-zinc-500 mt-1">공간 요소별로 재질을 선택하여 조합을 확인하세요.</p>
+                </div>
+                <div class="p-4 border-b border-zinc-100 bg-zinc-50/50">
+                    <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">적용할 면 선택</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setMappingTarget('wall')" id="map-btn-wall" class="map-surface-btn py-2 text-xs font-medium rounded-lg bg-zinc-900 text-white transition">벽체</button>
+                        <button onclick="setMappingTarget('floor')" id="map-btn-floor" class="map-surface-btn py-2 text-xs font-medium rounded-lg bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition">바닥</button>
+                        <button onclick="setMappingTarget('accent')" id="map-btn-accent" class="map-surface-btn py-2 text-xs font-medium rounded-lg bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition">포인트</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">재질 팔레트</label>
+                    <div class="grid grid-cols-2 gap-3" id="mapping-material-grid"></div>
+                </div>
+            </aside>
+            <div class="flex-1 relative bg-zinc-950">
+                <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
+                    <span>💡 마우스 드래그: 공간 회전</span>
+                </div>
+                <div id="mapping-canvas-container" class="w-full h-full cursor-grab"></div>
+            </div>
+        </section>
+
+        <!-- 4. EXHIBITION PAGE -->
+        <section id="page-exhibition" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8">
+            <div class="max-w-6xl mx-auto w-full space-y-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold tracking-tight text-zinc-900">Exhibition Archive</h2>
+                        <p class="text-sm text-zinc-500 mt-1">지금까지 구성하고 저장한 나만의 공간 디자인 조합 아카이브입니다.</p>
+                    </div>
+                    <button onclick="alert('현재 디자인이 전시 아카이브에 성공적으로 등록되었습니다!')" class="px-4 py-2 bg-zinc-900 text-white text-xs font-semibold rounded-xl hover:bg-zinc-800 transition">
+                        + 현재 디자인 전시 등록
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="exhibition-grid">
+                    <div class="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition group">
+                        <div class="h-48 bg-zinc-900 relative flex items-center justify-center text-zinc-600 font-medium">
+                            <span class="text-xs text-zinc-400">Project_01 [Minimal Concrete]</span>
+                        </div>
+                        <div class="p-5 space-y-2">
+                            <span class="text-[10px] uppercase font-bold text-amber-600 tracking-wider">Exhibition Item</span>
+                            <h3 class="font-bold text-zinc-900">노출 콘크리트 & 다크 월넛 라운지</h3>
+                            <p class="text-xs text-zinc-500">차분한 콘크리트 벽체와 따뜻한 오크 바닥재의 대비.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. INTERIOR PAGE (Room Surface & Furniture Customization) -->
+        <section id="page-interior" class="page absolute inset-0 hidden flex">
+            <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
+                <div class="p-6 border-b border-zinc-200">
+                    <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
+                    <p class="text-xs text-zinc-500 mt-1">방의 바닥/벽체 마감과 가구를 독립적으로 커스텀하세요.</p>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 space-y-6">
+                    <!-- Room Surface Customizer -->
+                    <div class="space-y-3 pb-4 border-b border-zinc-200">
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">방 구조물 마감 (바닥/벽)</label>
+                        
+                        <!-- Floor Custom -->
+                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
+                            <span class="text-xs font-bold text-zinc-800">바닥 (Floor)</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="changeRoomSurface('floor', 0xd4a373, 0.6)" class="w-6 h-6 rounded bg-[#d4a373] border border-zinc-300 shadow-sm hover:scale-110 transition" title="오크 우드"></button>
+                                <button onclick="changeRoomSurface('floor', 0x3d2817, 0.4)" class="w-6 h-6 rounded bg-[#3d2817] border border-zinc-300 shadow-sm hover:scale-110 transition" title="월넛 우드"></button>
+                                <button onclick="changeRoomSurface('floor', 0xededed, 0.3)" class="w-6 h-6 rounded bg-[#ededed] border border-zinc-300 shadow-sm hover:scale-110 transition" title="테라조"></button>
+                                <button onclick="changeRoomSurface('floor', 0xf5f5f5, 0.2)" class="w-6 h-6 rounded bg-[#f5f5f5] border border-zinc-300 shadow-sm hover:scale-110 transition" title="대리석"></button>
+                            </div>
+                        </div>
+
+                        <!-- Wall Custom -->
+                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
+                            <span class="text-xs font-bold text-zinc-800">벽체 (Walls)</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="changeRoomSurface('wall', 0x888888, 0.8)" class="w-6 h-6 rounded bg-[#888888] border border-zinc-300 shadow-sm hover:scale-110 transition" title="콘크리트"></button>
+                                <button onclick="changeRoomSurface('wall', 0xfafafa, 0.9)" class="w-6 h-6 rounded bg-[#fafafa] border border-zinc-300 shadow-sm hover:scale-110 transition" title="화이트 페인트"></button>
+                                <button onclick="changeRoomSurface('wall', 0x3d2817, 0.5)" class="w-6 h-6 rounded bg-[#3d2817] border border-zinc-300 shadow-sm hover:scale-110 transition" title="우드 루버"></button>
+                                <button onclick="changeRoomSurface('wall', 0x8c3b2e, 0.9)" class="w-6 h-6 rounded bg-[#8c3b2e] border border-zinc-300 shadow-sm hover:scale-110 transition" title="레드 브릭"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Furniture Objects -->
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">가구 / 오브젝트 추가</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addInteriorObject('sofa', '모던 소파')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">🛋️ 모던 소파</button>
+                            <button onclick="addInteriorObject('desk', '우드 데스크')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">🪑 우드 데스크</button>
+                            <button onclick="addInteriorObject('plant', '인테리어 플랜트')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">🪴 플랜트</button>
+                            <button onclick="addInteriorObject('lamp', '플로어 램프')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">💡 램프</button>
+                        </div>
+                    </div>
+
+                    <!-- Active Furniture List & Independent Customization -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 개별 관리</label>
+                        <div id="interior-objects-list" class="space-y-3">
+                            <p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위 버튼을 눌러 추가하세요.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-zinc-200 bg-zinc-50">
+                    <button onclick="saveInteriorProject()" class="w-full py-3 bg-zinc-900 text-white text-xs font-semibold rounded-xl hover:bg-zinc-800 transition shadow-md">
+                        💾 최종 디자인 저장하기
+                    </button>
+                </div>
+            </aside>
+            <div class="flex-1 relative bg-zinc-950">
+                <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
+                    <span>💡 마우스 드래그로 스튜디오 공간을 자유롭게 회전하세요.</span>
+                </div>
+                <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const materialsData = [
+            { id: 'concrete', name: '노출 콘크리트', category: 'Concrete', color: 0x888888, roughness: 0.8, metalness: 0.1, desc: '거푸집 해체 후 원연의 질감을 살려 모던하고 중후한 물성을 제공.', range: '외관 파사드, 거실 포인트 벽체, 로비' },
+            { id: 'wood_dark', name: '다크 월넛 우드', category: 'Wood', color: 0x3d2817, roughness: 0.5, metalness: 0.05, desc: '깊이감 있는 월넛 원목 질감으로 고급스러운 공간 분위기를 연출.', range: '임원실 벽체, 바닥재, 고급 가구' },
+            { id: 'wood_light', name: '내추럴 오크 우드', category: 'Wood', color: 0xd4a373, roughness: 0.6, metalness: 0.05, desc: '밝고 따뜻한 오크 톤으로 공간을 화사하고 넓어 보이게 조성.', range: '주거용 마루, 벽체 루버 마감' },
+            { id: 'terrazzo', name: '화이트 테라조', category: 'Stone', color: 0xededed, roughness: 0.3, metalness: 0.1, desc: '다채로운 골재 조각이 믹스되어 세련된 모던 인테리어에 적합.', range: '로비 바닥, 카운터 상판' },
+            { id: 'metal_dark', name: '다크 스틸 메탈', category: 'Metal', color: 0x222225, roughness: 0.2, metalness: 0.9, desc: '시크하고 차가운 메탈 질감으로 강렬한 대비와 포인트를 부여.', range: '프레임 구조물, 외부 루버' },
+            { id: 'marble', name: '비앙코 대리석', category: 'Stone', color: 0xf5f5f5, roughness: 0.15, metalness: 0.2, desc: '클래식하고 화려한 패턴으로 하이엔드 공간에 필수적인 석재.', range: '아트월, 욕실 벽체' },
+            { id: 'tile_water', name: '수공간 블루 타일', category: 'Tile', color: 0x205470, roughness: 0.2, metalness: 0.4, desc: '빛의 반사에 따라 물결치는 듯한 깊은 수공간 연출 타일.', range: '중정 수공간, 테라스 풀사이드' },
+            { id: 'brick', name: '레드 브릭', category: 'Brick', color: 0x8c3b2e, roughness: 0.9, metalness: 0.0, desc: '시간의 흐름을 품은 빈티지하면서도 따뜻한 벽돌 마감.', range: '외벽, 카페 인테리어 벽면' }
+        ];
+
+        let currentActivePage = 'home';
+        let isGlobalPBR = false;
+
+        function toggleGlobalPBR() {
+            isGlobalPBR = !isGlobalPBR;
+            const btn = document.getElementById('global-pbr-btn');
+            if (isGlobalPBR) {
+                btn.innerText = 'ON (PBR 렌더)';
+                btn.className = 'px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-500 text-zinc-950 transition shadow-inner';
+            } else {
+                btn.innerText = 'OFF (기본)';
+                btn.className = 'px-2.5 py-1 text-[11px] font-bold rounded-lg bg-zinc-300 text-zinc-700 transition shadow-inner';
+            }
+        }
+
+        function switchPage(pageId) {
+            currentActivePage = pageId;
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = 'nav-btn px-3 py-1.5 rounded-lg hover:text-zinc-900 transition text-zinc-600';
+            });
+
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            document.getElementById(`page-${pageId}`).style.display = 'flex';
+            
+            const activeNav = document.getElementById(`nav-${pageId}`);
+            if(activeNav) activeNav.className = 'nav-btn px-3 py-1.5 rounded-lg text-zinc-900 font-semibold transition bg-zinc-100';
+
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
+        }
+
+        // --- 1. Material Page ---
+        function initMaterialList() {
+            const grid = document.getElementById('material-card-grid');
+            grid.innerHTML = '';
+            materialsData.forEach(mat => {
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-900 transition cursor-pointer shadow-sm group flex flex-col justify-between gap-4';
+                card.onclick = () => openMaterialDetail(mat);
+
+                const colorBox = document.createElement('div');
+                colorBox.className = 'w-full h-32 rounded-xl shadow-inner border border-zinc-100 group-hover:scale-[1.02] transition-transform';
+                colorBox.style.backgroundColor = '#' + mat.color.toString(16).padStart(6, '0');
+
+                const info = document.createElement('div');
+                info.innerHTML = `
+                    <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">${mat.category}</span>
+                    <h3 class="font-bold text-zinc-900 text-lg mt-0.5">${mat.name}</h3>
+                    <p class="text-xs text-zinc-500 mt-1 line-clamp-2">${mat.desc}</p>
+                `;
+                card.appendChild(colorBox);
+                card.appendChild(info);
+                grid.appendChild(card);
+            });
+        }
+
+        let detailScene, detailCamera, detailRenderer, detailMesh;
+        let isDetailNight = false;
+
+        function openMaterialDetail(mat) {
+            document.getElementById('material-list-view').classList.add('hidden');
+            document.getElementById('material-detail-view').classList.remove('hidden');
+
+            document.getElementById('detail-category').innerText = mat.category;
+            document.getElementById('detail-title').innerText = mat.name;
+            document.getElementById('detail-desc').innerText = mat.desc;
+            document.getElementById('detail-range').innerText = mat.range;
+
+            initDetailViewer(mat);
+        }
+
+        function closeMaterialDetail() {
+            document.getElementById('material-detail-view').classList.add('hidden');
+            document.getElementById('material-list-view').classList.remove('hidden');
+        }
+
+        function initDetailViewer(matData) {
+            const container = document.getElementById('material-canvas-container');
+            container.innerHTML = '';
+
+            detailScene = new THREE.Scene();
+            detailScene.background = new THREE.Color(0x09090b);
+
+            detailCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            detailCamera.position.set(4, 3, 5);
+            detailCamera.lookAt(0, 0, 0);
+
+            detailRenderer = new THREE.WebGLRenderer({ antialias: true });
+            detailRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(detailRenderer.domElement);
+
+            detailScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            dir.position.set(5, 5, 5);
+            detailScene.add(dir);
+
+            detailMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshStandardMaterial({
+                color: matData.color,
+                roughness: matData.roughness,
+                metalness: matData.metalness
+            }));
+            detailScene.add(detailMesh);
+
+            let isDrag = false, prevMouse = { x: 0, y: 0 };
+            container.onmousedown = (e) => { isDrag = true; prevMouse = { x: e.clientX, y: e.clientY }; };
+            window.onmousemove = (e) => {
+                if (!isDrag || currentActivePage !== 'material') return;
+                detailMesh.rotation.y += (e.clientX - prevMouse.x) * 0.01;
+                detailMesh.rotation.x += (e.clientY - prevMouse.y) * 0.01;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            };
+            window.onmouseup = () => { isDrag = false; };
+
+            function animateDetail() {
+                requestAnimationFrame(animateDetail);
+                detailRenderer.render(detailScene, detailCamera);
+            }
+            animateDetail();
+        }
+
+        function toggleMaterialEnv() {
+            isDetailNight = !isDetailNight;
+            const btn = document.getElementById('mat-env-btn');
+            if(isDetailNight) {
+                detailScene.background = new THREE.Color(0x020203);
+                btn.innerText = '🌙 야간 간접조명';
+                btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow';
+            } else {
+                detailScene.background = new THREE.Color(0x09090b);
+                btn.innerText = '☀️ 주간 채광';
+                btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition shadow';
+            }
+        }
+
+        // --- 2. 3D Mapping Page ---
+        let mapScene, mapCamera, mapRenderer;
+        let mapFloorMesh, mapBackWallMesh, mapLeftWallMesh, mapAccentMesh;
+        let currentMapTarget = 'wall';
+
+        function initMapping3D() {
+            const container = document.getElementById('mapping-canvas-container');
+            if(container.childElementCount > 0) return;
+
+            mapScene = new THREE.Scene();
+            mapScene.background = new THREE.Color(0x09090b);
+
+            mapCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            mapCamera.position.set(6, 4, 7);
+
+            mapRenderer = new THREE.WebGLRenderer({ antialias: true });
+            mapRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(mapRenderer.domElement);
+
+            mapScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dir = new THREE.DirectionalLight(0xfff5ea, 1.2);
+            dir.position.set(5, 8, 5);
+            mapScene.add(dir);
+
+            mapFloorMesh = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.6 }));
+            mapFloorMesh.rotation.x = -Math.PI / 2;
+            mapScene.add(mapFloorMesh);
+
+            mapBackWallMesh = new THREE.Mesh(new THREE.PlaneGeometry(5, 4), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 }));
+            mapBackWallMesh.position.set(0, 2, -2.5);
+            mapScene.add(mapBackWallMesh);
+
+            mapLeftWallMesh = new THREE.Mesh(new THREE.PlaneGeometry(5, 4), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 }));
+            mapLeftWallMesh.position.set(-2.5, 2, 0);
+            mapLeftWallMesh.rotation.y = Math.PI / 2;
+            mapScene.add(mapLeftWallMesh);
+
+            mapAccentMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3, 0.2), new THREE.MeshStandardMaterial({ color: 0x222225, roughness: 0.2, metalness: 0.9 }));
+            mapAccentMesh.position.set(1.2, 1.5, -1.5);
+            mapScene.add(mapAccentMesh);
+
+            const grid = document.getElementById('mapping-material-grid');
+            materialsData.forEach(mat => {
+                const card = document.createElement('div');
+                card.className = 'cursor-pointer bg-zinc-950 border border-zinc-800 rounded-xl p-3 hover:border-amber-500 transition flex flex-col items-center gap-2 text-center';
+                card.onclick = () => applyMappingMaterial(mat);
+
+                const box = document.createElement('div');
+                box.className = 'w-full h-10 rounded-lg border border-zinc-800';
+                box.style.backgroundColor = '#' + mat.color.toString(16).padStart(6, '0');
+
+                const name = document.createElement('span');
+                name.className = 'text-[11px] text-zinc-300 font-medium';
+                name.innerText = mat.name;
+
+                card.appendChild(box);
+                card.appendChild(name);
+                grid.appendChild(card);
+            });
+
+            let isDrag = false, prevMouse = {x:0, y:0};
+            let theta = Math.PI/4, phi = Math.PI/4, radius = 9;
+
+            function updateCam() {
+                mapCamera.position.x = radius * Math.sin(phi) * Math.sin(theta);
+                mapCamera.position.y = radius * Math.cos(phi);
+                mapCamera.position.z = radius * Math.sin(phi) * Math.cos(theta);
+                mapCamera.lookAt(0, 1, 0);
+            }
+            updateCam();
+
+            container.addEventListener('mousedown', e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; });
+            window.addEventListener('mousemove', e => {
+                if(!isDrag || currentActivePage !== 'mapping') return;
+                theta -= (e.clientX - prevMouse.x) * 0.008;
+                phi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, phi - (e.clientY - prevMouse.y) * 0.008));
+                updateCam();
+                prevMouse = {x: e.clientX, y: e.clientY};
+            });
+            window.addEventListener('mouseup', () => isDrag = false);
+
+            function animateMap() {
+                requestAnimationFrame(animateMap);
+                mapRenderer.render(mapScene, mapCamera);
+            }
+            animateMap();
+        }
+
+        function setMappingTarget(target) {
+            currentMapTarget = target;
+            document.querySelectorAll('.map-surface-btn').forEach(btn => {
+                btn.className = 'map-surface-btn py-2 text-xs font-medium rounded-lg bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition';
+            });
+            document.getElementById(`map-btn-${target}`).className = 'map-surface-btn py-2 text-xs font-medium rounded-lg bg-zinc-900 text-white transition';
+        }
+
+        function applyMappingMaterial(matData) {
+            const newMat = new THREE.MeshStandardMaterial({
+                color: matData.color,
+                roughness: matData.roughness,
+                metalness: matData.metalness
+            });
+
+            if(currentMapTarget === 'wall') {
+                mapBackWallMesh.material = newMat;
+                mapLeftWallMesh.material = newMat;
+            } else if(currentMapTarget === 'floor') {
+                mapFloorMesh.material = newMat;
+            } else if(currentMapTarget === 'accent') {
+                mapAccentMesh.material = newMat;
+            }
+        }
+
+        // --- 3. Interior Page (Room Box + Surface Customizer + Furniture) ---
+        let intScene, intCamera, intRenderer;
+        let interiorItems = [];
+        let intFloorMesh, intBackWallMesh, intLeftWallMesh;
+
+        function initInterior3D() {
+            const container = document.getElementById('interior-canvas-container');
+            if(container.childElementCount > 0) return;
+
+            intScene = new THREE.Scene();
+            intScene.background = new THREE.Color(0x09090b);
+
+            intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            intCamera.position.set(6, 4, 7);
+
+            intRenderer = new THREE.WebGLRenderer({ antialias: true });
+            intRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(intRenderer.domElement);
+
+            intScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            dir.position.set(4, 7, 4);
+            intScene.add(dir);
+
+            // 정사각형 바닥 스튜디오 셸 생성
+            intFloorMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(5, 5),
+                new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.6 })
+            );
+            intFloorMesh.rotation.x = -Math.PI / 2;
+            intScene.add(intFloorMesh);
+
+            intBackWallMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(5, 4),
+                new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 })
+            );
+            intBackWallMesh.position.set(0, 2, -2.5);
+            intScene.add(intBackWallMesh);
+
+            intLeftWallMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(5, 4),
+                new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 })
+            );
+            intLeftWallMesh.position.set(-2.5, 2, 0);
+            intLeftWallMesh.rotation.y = Math.PI / 2;
+            intScene.add(intLeftWallMesh);
+
+            // 기본 가구 추가
+            addInteriorObject('sofa', '모던 소파');
+
+            let isDrag = false, prevMouse = {x:0, y:0};
+            let theta = Math.PI/4, phi = Math.PI/4, radius = 9;
+
+            function updateCam() {
+                intCamera.position.x = radius * Math.sin(phi) * Math.sin(theta);
+                intCamera.position.y = radius * Math.cos(phi);
+                intCamera.position.z = radius * Math.sin(phi) * Math.cos(theta);
+                intCamera.lookAt(0, 1, 0);
+            }
+            updateCam();
+
+            container.addEventListener('mousedown', e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; });
+            window.addEventListener('mousemove', e => {
+                if(!isDrag || currentActivePage !== 'interior') return;
+                theta -= (e.clientX - prevMouse.x) * 0.008;
+                phi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, phi - (e.clientY - prevMouse.y) * 0.008));
+                updateCam();
+                prevMouse = {x: e.clientX, y: e.clientY};
+            });
+            window.addEventListener('mouseup', () => isDrag = false);
+
+            function animateInt() {
+                requestAnimationFrame(animateInt);
+                intRenderer.render(intScene, intCamera);
+            }
+            animateInt();
+        }
+
+        function changeRoomSurface(target, colorHex, roughnessVal) {
+            const newMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: roughnessVal });
+            if (target === 'floor') {
+                intFloorMesh.material = newMat;
+            } else if (target === 'wall') {
+                intBackWallMesh.material = newMat;
+                intLeftWallMesh.material = newMat;
+            }
+        }
+
+        function addInteriorObject(type, name) {
+            let mesh;
+            const defaultColor = 0x3d2817;
+            const mat = new THREE.MeshStandardMaterial({ color: defaultColor, roughness: 0.5 });
+
+            if(type === 'sofa') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 1), mat);
+                mesh.position.set(0, 0.4, 0);
+            } else if(type === 'desk') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 0.9, 1), mat);
+                mesh.position.set(0, 0.45, -1.2);
+            } else if(type === 'plant') {
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x2e4f3f }));
+                mesh.position.set(1.5, 0.4, 1.5);
+            } else if(type === 'lamp') {
+                mesh = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 }));
+                mesh.position.set(-1.5, 0.6, 1.5);
+            }
+
+            if(mesh) {
+                intScene.add(mesh);
+                interiorItems.push({ id: Date.now(), name: name, mesh: mesh });
+                renderInteriorList();
+            }
+        }
+
+        function removeInteriorObject(id) {
+            const index = interiorItems.findIndex(item => item.id === id);
+            if(index !== -1) {
+                intScene.remove(interiorItems[index].mesh);
+                interiorItems.splice(index, 1);
+                renderInteriorList();
+            }
+        }
+
+        function changeItemColor(id, hexColor) {
+            const item = interiorItems.find(i => i.id === id);
+            if(item && item.mesh.material && item.mesh.material.color) {
+                item.mesh.material.color.setHex(hexColor);
+            }
+        }
+
+        function renderInteriorList() {
+            const listContainer = document.getElementById('interior-objects-list');
+            listContainer.innerHTML = '';
+
+            if(interiorItems.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위 버튼을 눌러 추가하세요.</p>`;
+                return;
+            }
+
+            interiorItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-2';
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-zinc-800">${item.name}</span>
+                        <button onclick="removeInteriorObject(${item.id})" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
+                    </div>
+                    <div class="flex items-center gap-1.5 pt-1">
+                        <span class="text-[10px] text-zinc-400">컬러:</span>
+                        <button onclick="changeItemColor(${item.id}, 0x3d2817)" class="w-5 h-5 rounded bg-[#3d2817] border border-zinc-300 hover:scale-110 transition"></button>
+                        <button onclick="changeItemColor(${item.id}, 0x888888)" class="w-5 h-5 rounded bg-[#888888] border border-zinc-300 hover:scale-110 transition"></button>
+                        <button onclick="changeItemColor(${item.id}, 0xd4a373)" class="w-5 h-5 rounded bg-[#d4a373] border border-zinc-300 hover:scale-110 transition"></button>
+                        <button onclick="changeItemColor(${item.id}, 0x205470)" class="w-5 h-5 rounded bg-[#205470] border border-zinc-300 hover:scale-110 transition"></button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function saveInteriorProject() {
+            alert('인테리어 스튜디오 공간 및 가구 배치 디자인이 성공적으로 저장되었습니다!');
+            switchPage('exhibition');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMaterialList();
+            initMapping3D();
+            initInterior3D();
+        });
+
+        window.addEventListener('resize', () => {
+            if(detailRenderer && detailCamera) {
+                const container = document.getElementById('material-canvas-container');
+                detailCamera.aspect = container.clientWidth / container.clientHeight;
+                detailCamera.updateProjectionMatrix();
+                detailRenderer.setSize(container.clientWidth, container.clientHeight);
+            }
+            if(mapRenderer && mapCamera) {
+                const container = document.getElementById('mapping-canvas-container');
+                mapCamera.aspect = container.clientWidth / container.clientHeight;
+                mapCamera.updateProjectionMatrix();
+                mapRenderer.setSize(container.clientWidth, container.clientHeight);
+            }
+            if(intRenderer && intCamera) {
+                const container = document.getElementById('interior-canvas-container');
+                intCamera.aspect = container.clientWidth / container.clientHeight;
+                intCamera.updateProjectionMatrix();
+                intRenderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+    </script>
+</body>
+</html>
