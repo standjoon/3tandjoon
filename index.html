@@ -257,6 +257,10 @@
                 btn.innerText = 'OFF (기본)';
                 btn.className = 'px-2.5 py-1 text-[11px] font-bold rounded-lg bg-zinc-300 text-zinc-700 transition shadow-inner';
             }
+            // 현재 상세 뷰어가 켜져 있다면 PBR 토글 상태 반영하여 다시 로드
+            if (currentMaterialData) {
+                initDetailViewer(currentMaterialData);
+            }
         }
 
         function switchPage(pageId) {
@@ -276,6 +280,8 @@
         }
 
         // --- 1. Material Page ---
+        let currentMaterialData = null;
+
         function initMaterialList() {
             const grid = document.getElementById('material-card-grid');
             grid.innerHTML = '';
@@ -301,9 +307,11 @@
         }
 
         let detailScene, detailCamera, detailRenderer, detailMesh;
+        let detailAmbientLight, detailDirLight;
         let isDetailNight = false;
 
         function openMaterialDetail(mat) {
+            currentMaterialData = mat;
             document.getElementById('material-list-view').classList.add('hidden');
             document.getElementById('material-detail-view').classList.remove('hidden');
 
@@ -316,6 +324,7 @@
         }
 
         function closeMaterialDetail() {
+            currentMaterialData = null;
             document.getElementById('material-detail-view').classList.add('hidden');
             document.getElementById('material-list-view').classList.remove('hidden');
         }
@@ -325,7 +334,7 @@
             container.innerHTML = '';
 
             detailScene = new THREE.Scene();
-            detailScene.background = new THREE.Color(0x09090b);
+            detailScene.background = isDetailNight ? new THREE.Color(0x020203) : new THREE.Color(0x09090b);
 
             detailCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             detailCamera.position.set(4, 3, 5);
@@ -335,17 +344,21 @@
             detailRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(detailRenderer.domElement);
 
-            detailScene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-            dir.position.set(5, 5, 5);
-            detailScene.add(dir);
+            // 조명 설정 (주간/야간 모드 반영)
+            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.3 : 0.7);
+            detailScene.add(detailAmbientLight);
+
+            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 0.5 : 1.2);
+            detailDirLight.position.set(5, 5, 5);
+            detailScene.add(detailDirLight);
 
             let materialOptions = {
                 roughness: matData.roughness,
                 metalness: matData.metalness
             };
 
-            if (matData.texturePath) {
+            // PBR 렌더 모드가 켜져 있거나 텍스처 경로가 있는 경우 텍스처 적용
+            if (isGlobalPBR && matData.texturePath) {
                 const textureLoader = new THREE.TextureLoader();
                 materialOptions.map = textureLoader.load(matData.texturePath);
             } else {
@@ -376,11 +389,15 @@
             isDetailNight = !isDetailNight;
             const btn = document.getElementById('mat-env-btn');
             if(isDetailNight) {
-                detailScene.background = new THREE.Color(0x020203);
+                if(detailScene) detailScene.background = new THREE.Color(0x020203);
+                if(detailAmbientLight) detailAmbientLight.intensity = 0.3;
+                if(detailDirLight) detailDirLight.intensity = 0.5;
                 btn.innerText = '🌙 야간 간접조명';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow';
             } else {
-                detailScene.background = new THREE.Color(0x09090b);
+                if(detailScene) detailScene.background = new THREE.Color(0x09090b);
+                if(detailAmbientLight) detailAmbientLight.intensity = 0.7;
+                if(detailDirLight) detailDirLight.intensity = 1.2;
                 btn.innerText = '☀️ 주간 채광';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition shadow';
             }
@@ -483,11 +500,19 @@
         }
 
         function applyMappingMaterial(matData) {
-            const newMat = new THREE.MeshStandardMaterial({
-                color: matData.color,
+            let materialOpts = {
                 roughness: matData.roughness,
                 metalness: matData.metalness
-            });
+            };
+
+            if (isGlobalPBR && matData.texturePath) {
+                const textureLoader = new THREE.TextureLoader();
+                materialOpts.map = textureLoader.load(matData.texturePath);
+            } else {
+                materialOpts.color = matData.color;
+            }
+
+            const newMat = new THREE.MeshStandardMaterial(materialOpts);
 
             if(currentMapTarget === 'wall') {
                 mapBackWallMesh.material = newMat;
@@ -499,7 +524,7 @@
             }
         }
 
-        // --- 3. Interior Page (Room Box + Surface Customizer + Furniture) ---
+        // --- 3. Interior Page ---
         let intScene, intCamera, intRenderer;
         let interiorItems = [];
         let intFloorMesh, intBackWallMesh, intLeftWallMesh;
@@ -523,7 +548,6 @@
             dir.position.set(4, 7, 4);
             intScene.add(dir);
 
-            // 정사각형 바닥 스튜디오 셸 생성
             intFloorMesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(5, 5),
                 new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.6 })
@@ -546,7 +570,6 @@
             intLeftWallMesh.rotation.y = Math.PI / 2;
             intScene.add(intLeftWallMesh);
 
-            // 기본 가구 추가
             addInteriorObject('sofa', '모던 소파');
 
             let isDrag = false, prevMouse = {x:0, y:0};
