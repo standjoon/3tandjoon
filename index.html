@@ -32,7 +32,7 @@
     </header>
 
     <!-- Main View Container (Pages) -->
-    <main class="flex-1 relative overflow-hidden bg-zinc-50">
+    <main class="flex-1 relative overflow-hidden bg-white">
 
         <!-- 1. HOME PAGE -->
         <section id="page-home" class="page absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white z-20">
@@ -49,23 +49,24 @@
             </div>
         </section>
 
-        <!-- 2. MATERIAL PAGE -->
-        <section id="page-material" class="page absolute inset-0 hidden flex-col overflow-y-auto p-8 z-20 bg-zinc-50">
-            <div id="material-list-view" class="max-w-6xl mx-auto w-full space-y-8">
-                <div>
-                    <h2 class="text-2xl font-bold tracking-tight text-zinc-900">Material Library</h2>
-                    <p class="text-sm text-zinc-500 mt-1">건축 및 인테리어에 사용되는 핵심 재질 목록입니다. 재질을 선택하여 상세 특징과 시뮬레이션을 확인하세요.</p>
+        <!-- 2. MATERIAL PAGE (Spec Book Style) -->
+        <section id="page-material" class="page absolute inset-0 hidden flex-col overflow-y-auto p-10 z-20 bg-white">
+            <div id="material-list-view" class="max-w-7xl mx-auto w-full space-y-10">
+                <div class="border-b border-zinc-200 pb-6">
+                    <h2 class="text-2xl font-bold tracking-tight text-zinc-900 uppercase tracking-widest">Material Spec Book</h2>
+                    <p class="text-xs text-zinc-400 mt-1 uppercase tracking-wider">Architectural & Interior Finish Samples</p>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="material-card-grid"></div>
+                <!-- 👉 가로 최대 5개 그리드 배치 -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10" id="material-card-grid"></div>
             </div>
 
             <div id="material-detail-view" class="max-w-6xl mx-auto w-full space-y-8 hidden">
-                <button onclick="closeMaterialDetail()" class="text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-zinc-200 w-max shadow-sm">
+                <button onclick="closeMaterialDetail()" class="text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200 w-max shadow-sm">
                     ← 목록으로 돌아가기
                 </button>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div class="lg:col-span-1 space-y-6 bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+                    <div class="lg:col-span-1 space-y-6 bg-zinc-50 p-6 rounded-2xl border border-zinc-200 shadow-sm">
                         <div>
                             <span id="detail-category" class="text-xs font-bold text-amber-600 uppercase tracking-wider">Concrete</span>
                             <h3 id="detail-title" class="text-2xl font-bold text-zinc-900 mt-1">노출 콘크리트</h3>
@@ -302,27 +303,33 @@
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
         }
 
-        // --- 1. Material Page ---
+        // --- 1. Material Page (Spec Book Grid Layout) ---
         let currentMaterialData = null;
 
         function initMaterialList() {
             const grid = document.getElementById('material-card-grid');
             grid.innerHTML = '';
-            materialsData.forEach(mat => {
+            materialsData.forEach((mat, idx) => {
                 const card = document.createElement('div');
-                card.className = 'bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-900 transition cursor-pointer shadow-sm group flex flex-col justify-between gap-4';
+                // 👉 테두리와 불필요한 장식을 걷어낸 미니멀한 스펙 북 카드 스타일
+                card.className = 'cursor-pointer group flex flex-col space-y-2';
                 card.onclick = () => openMaterialDetail(mat);
 
+                // 사각형 썸네일 칩 (이미지 레퍼런스 스타일)
                 const colorBox = document.createElement('div');
-                colorBox.className = 'w-full h-32 rounded-xl shadow-inner border border-zinc-100 group-hover:scale-[1.02] transition-transform';
+                colorBox.className = 'w-full aspect-square bg-zinc-100 border border-zinc-200 group-hover:border-zinc-900 transition-colors duration-200 overflow-hidden relative shadow-sm';
                 colorBox.style.backgroundColor = '#' + mat.color.toString(16).padStart(6, '0');
 
+                // 텍스트 스펙 정보 (카테고리 / 브랜드 / 자재명 3단 구조)
                 const info = document.createElement('div');
+                info.className = 'space-y-0.5 pt-1';
                 info.innerHTML = `
-                    <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">${mat.category}</span>
-                    <h3 class="font-bold text-zinc-900 text-lg mt-0.5">${mat.name}</h3>
-                    <p class="text-xs text-zinc-500 mt-1 line-clamp-2">${mat.desc}</p>
+                    <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">MAT-${(idx+1).toString().padStart(2, '0')}</div>
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-900">${mat.category}</div>
+                    <div class="text-xs text-zinc-500 font-medium">Arch Collection</div>
+                    <div class="text-xs font-semibold text-zinc-800">${mat.name}</div>
                 `;
+
                 card.appendChild(colorBox);
                 card.appendChild(info);
                 grid.appendChild(card);
@@ -370,7 +377,6 @@
             detailRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(detailRenderer.domElement);
 
-            // 👉 야간 모드 조정: 너무 어둡지 않게 주변광(0.25)을 살짝 올리고, 너무 뜨지 않게 핀조명 강도(1.6)를 적절히 다운
             detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.25 : 0.7);
             detailScene.add(detailAmbientLight);
 
@@ -424,9 +430,9 @@
             const btn = document.getElementById('mat-env-btn');
             if(isDetailNight) {
                 if(detailScene) detailScene.background = new THREE.Color(0x020203);
-                if(detailAmbientLight) detailAmbientLight.intensity = 0.25; // 덜 어둡게 (0.05 -> 0.25)
+                if(detailAmbientLight) detailAmbientLight.intensity = 0.25;
                 if(detailDirLight) {
-                    detailDirLight.intensity = 1.6;                          // 덜 밝게/안 뜨게 (2.8 -> 1.6)
+                    detailDirLight.intensity = 1.6;
                     detailDirLight.position.set(-4, 5, 4);
                 }
                 btn.innerText = '🌙 야간 간접조명';
