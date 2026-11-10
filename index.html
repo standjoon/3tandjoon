@@ -243,7 +243,6 @@
         let currentActivePage = 'home';
         let isGlobalPBR = true; // 기본값 PBR ON
 
-        // 애니메이션 ID 관리 변수 (페이지 전환 시 렉 방지용)
         let detailAnimId = null;
         let mapAnimId = null;
         let intAnimId = null;
@@ -264,7 +263,6 @@
         }
 
         function switchPage(pageId) {
-            // 1. 다른 페이지로 넘어갈 때 이전 3D 페이지의 애니메이션 루프 강제 정지 & 메모리 정리
             if (currentActivePage === 'material' && pageId !== 'material') {
                 if (detailAnimId) cancelAnimationFrame(detailAnimId);
                 disposeDetailViewer();
@@ -290,7 +288,6 @@
             const activeNav = document.getElementById(`nav-${pageId}`);
             if(activeNav) activeNav.className = 'nav-btn px-3 py-1.5 rounded-lg text-zinc-900 font-semibold transition bg-zinc-100';
 
-            // 페이지 진입 시 해당 3D 뷰어 재초기화
             if (pageId === 'mapping') initMapping3D();
             if (pageId === 'interior') initInterior3D();
 
@@ -365,11 +362,12 @@
             detailRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(detailRenderer.domElement);
 
-            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.15 : 0.7);
+            // 👉 야간 모드일 때 주변광은 극도로 어둡게(0.05), 좌측 상단 핀조명(DirectionalLight)은 강하게(2.8) 배치
+            detailAmbientLight = new THREE.AmbientLight(0xffffff, isDetailNight ? 0.05 : 0.7);
             detailScene.add(detailAmbientLight);
 
-            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 2.2 : 1.2); 
-            detailDirLight.position.set(5, 4, 3);
+            detailDirLight = new THREE.DirectionalLight(0xffffff, isDetailNight ? 2.8 : 1.2); 
+            detailDirLight.position.set(-4, 5, 4); // X:-4(좌측), Y:5(상단), Z:4(앞쪽) -> 좌측 상단 핀조명 연출!
             detailScene.add(detailDirLight);
 
             let materialOptions = {
@@ -418,14 +416,20 @@
             const btn = document.getElementById('mat-env-btn');
             if(isDetailNight) {
                 if(detailScene) detailScene.background = new THREE.Color(0x020203);
-                if(detailAmbientLight) detailAmbientLight.intensity = 0.15;
-                if(detailDirLight) detailDirLight.intensity = 2.2;
+                if(detailAmbientLight) detailAmbientLight.intensity = 0.05; // 주변광 거의 차단
+                if(detailDirLight) {
+                    detailDirLight.intensity = 2.8;                          // 좌측 상단 핀조명 강조
+                    detailDirLight.position.set(-4, 5, 4);                   // 좌측 상단 위치 고정
+                }
                 btn.innerText = '🌙 야간 간접조명';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow';
             } else {
                 if(detailScene) detailScene.background = new THREE.Color(0x09090b);
                 if(detailAmbientLight) detailAmbientLight.intensity = 0.7;
-                if(detailDirLight) detailDirLight.intensity = 1.2;
+                if(detailDirLight) {
+                    detailDirLight.intensity = 1.2;
+                    detailDirLight.position.set(5, 5, 5);                   // 주간 채광 기본 위치로 복원
+                }
                 btn.innerText = '☀️ 주간 채광';
                 btn.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition shadow';
             }
@@ -583,7 +587,7 @@
             container.appendChild(intRenderer.domElement);
 
             intScene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            const dir = new THREE.DirectionalLight(0xfff5ea, 1.2);
             dir.position.set(4, 7, 4);
             intScene.add(dir);
 
