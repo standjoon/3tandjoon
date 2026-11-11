@@ -160,12 +160,18 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (Architectural Shell with Thickness, Window Frame, Glass, Door & Handle) -->
+        <!-- 5. INTERIOR PAGE (High-end Architectural Shell with Detailed Openings & Lighting Controls) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
-                <div class="p-6 border-b border-zinc-200">
-                    <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
-                    <p class="text-xs text-zinc-500 mt-1">하이엔드 셸(Shell) 구조 3D 스튜디오</p>
+                <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
+                        <p class="text-xs text-zinc-500 mt-1">하이엔드 셸 구조 3D 스튜디오</p>
+                    </div>
+                    <!-- 인테리어 페이지 전용 주/야간 조명 토글 버튼 -->
+                    <button onclick="toggleInteriorEnv()" id="int-env-btn" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm">
+                        ☀️ 주간
+                    </button>
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-4 space-y-6">
@@ -218,7 +224,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 4000×4000 셸 구조 (벽체 두께·창틀 샤시·유리·문틀·손잡이 적용)</span>
+                    <span>💡 4000×4000 하이엔드 셸 (창호 샤시·유리·문틀·손잡이·조명 연동)</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -582,10 +588,13 @@
             }
         }
 
-        // --- 3. Interior Page (Architectural Shell with Thickness, Window, Glass, Door, Handle) ---
+        // --- 3. Interior Page (Architectural Shell with Proper Openings, Thickness & Lighting Control) ---
         let intScene, intCamera, intRenderer;
         let interiorItems = [];
-        let intFloorMesh, intBackWallMesh, intLeftWallMesh;
+        let intFloorMesh, intBackWallLeft, intBackWallRight, intBackWallTop, intBackWallBottom;
+        let intLeftWallMesh;
+        let intAmbientLight, intDirLight;
+        let isIntNight = false;
 
         function initInterior3D() {
             const container = document.getElementById('interior-canvas-container');
@@ -593,7 +602,7 @@
             if (intAnimId) cancelAnimationFrame(intAnimId);
 
             intScene = new THREE.Scene();
-            intScene.background = new THREE.Color(0x09090b);
+            intScene.background = isIntNight ? new THREE.Color(0x020203) : new THREE.Color(0x09090b);
 
             intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             intCamera.position.set(8, 6, 10);
@@ -602,15 +611,18 @@
             intRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(intRenderer.domElement);
 
-            intScene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const dir = new THREE.DirectionalLight(0xfff5ea, 1.3);
-            dir.position.set(6, 10, 6);
-            intScene.add(dir);
+            // 조명 세팅 (재질 페이지와 동일한 주/야간 감성 조명 연동)
+            intAmbientLight = new THREE.AmbientLight(0xffffff, isIntNight ? 0.25 : 0.7);
+            intScene.add(intAmbientLight);
+
+            intDirLight = new THREE.DirectionalLight(0xfff5ea, isIntNight ? 1.6 : 1.3);
+            intDirLight.position.set(isIntNight ? -4 : 6, 10, isIntNight ? 5 : 6);
+            intScene.add(intDirLight);
 
             // Scale: 1 unit = 1000mm (4m x 4m x 4m)
             const roomSize = 4.0;
             const halfRoom = roomSize / 2;
-            const wallThickness = 0.2; // 벽체 두께감 (200mm)
+            const wallThick = 0.2; // 벽체 두께 200mm
 
             // 1. 바닥 (Floor)
             intFloorMesh = new THREE.Mesh(
@@ -620,69 +632,79 @@
             intFloorMesh.rotation.x = -Math.PI / 2;
             intScene.add(intFloorMesh);
 
-            // 2. 벽체 (Walls with physical thickness using BoxGeometry)
+            // 2. 정면 벽 (Back Wall with Window Opening: 2400 x 1800, Sill 1500 -> Y: 2.4)
+            // 총 가로 4m 중 창문 폭 2.4m를 제외한 좌우 벽 분할 구성
             const wallMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 });
 
-            // Back Wall (thickness applied in Z)
-            intBackWallMesh = new THREE.Mesh(new THREE.BoxGeometry(roomSize, roomSize, wallThickness), wallMat);
-            intBackWallMesh.position.set(0, halfRoom, -halfRoom + wallThickness / 2);
-            intScene.add(intBackWallMesh);
+            // 좌측 벽 파편 (폭 0.8m, 높이 4m)
+            intBackWallLeft = new THREE.Mesh(new THREE.BoxGeometry(0.8, roomSize, wallThick), wallMat);
+            intBackWallLeft.position.set(-1.6, halfRoom, -halfRoom + wallThick / 2);
+            intScene.add(intBackWallLeft);
 
-            // Left Wall (thickness applied in X)
-            intLeftWallMesh = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, roomSize, roomSize), wallMat);
-            intLeftWallMesh.position.set(-halfRoom + wallThickness / 2, halfRoom, 0);
+            // 우측 벽 파편 (폭 0.8m, 높이 4m)
+            intBackWallRight = new THREE.Mesh(new THREE.BoxGeometry(0.8, roomSize, wallThick), wallMat);
+            intBackWallRight.position.set(1.6, halfRoom, -halfRoom + wallThick / 2);
+            intScene.add(intBackWallRight);
+
+            // 창문 하단 벽 파편 (폭 2.4m, 높이 1.5m)
+            intBackWallBottom = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.5, wallThick), wallMat);
+            intBackWallBottom.position.set(0, 0.75, -halfRoom + wallThick / 2);
+            intScene.add(intBackWallBottom);
+
+            // 창문 상단 벽 파편 (폭 2.4m, 높이 0.7m -> Y: 3.65)
+            intBackWallTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, wallThick), wallMat);
+            intBackWallTop.position.set(0, 3.65, -halfRoom + wallThick / 2);
+            intScene.add(intBackWallTop);
+
+            // 3. 좌측 벽 (Left Wall - solid)
+            intLeftWallMesh = new THREE.Mesh(new THREE.BoxGeometry(wallThick, roomSize, roomSize), wallMat);
+            intLeftWallMesh.position.set(-halfRoom + wallThick / 2, halfRoom, 0);
             intScene.add(intLeftWallMesh);
 
-            // 3. 걸레받이 (Skirting: 100mm height)
+            // 4. 걸레받이 (Skirting: 100mm height)
             const skirtingMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
             const skirtH = 0.1;
             const skirtThick = 0.03;
 
             const skirtBack = new THREE.Mesh(new THREE.BoxGeometry(roomSize, skirtH, skirtThick), skirtingMat);
-            skirtBack.position.set(0, skirtH / 2, -halfRoom + wallThickness + skirtThick / 2);
+            skirtBack.position.set(0, skirtH / 2, -halfRoom + wallThick + skirtThick / 2);
             intScene.add(skirtBack);
 
             const skirtLeft = new THREE.Mesh(new THREE.BoxGeometry(skirtThick, skirtH, roomSize), skirtingMat);
-            skirtLeft.position.set(-halfRoom + wallThickness + skirtThick / 2, skirtH / 2, 0);
+            skirtLeft.position.set(-halfRoom + wallThick + skirtThick / 2, skirtH / 2, 0);
             intScene.add(skirtLeft);
 
-            // 4. 창문 및 샤시 디테일 (Window: 2400 x 1800, Sill height 1500 -> Y center 2.4)
+            // 5. 창문 및 샤시 디테일 (Window: 2400 x 1800, Sill height 1500 -> Center Y: 2.4)
             const windowGroup = new THREE.Group();
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.2, metalness: 0.8 }); // 알루미늄 샤시
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.2, metalness: 0.8 }); // 알루미늄 프레임
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
 
-            // 외곽 메인 프레임 (샤시)
-            const outerFrame = new THREE.Mesh(new THREE.BoxGeometry(2.46, 1.86, 0.15), frameMat);
+            const outerFrame = new THREE.Mesh(new THREE.BoxGeometry(2.42, 1.82, 0.15), frameMat);
             windowGroup.add(outerFrame);
 
-            // 유리 패널 (투명 샤시 내부)
             const glassPanel = new THREE.Mesh(new THREE.BoxGeometry(2.32, 1.72, 0.04), glassMat);
             windowGroup.add(glassPanel);
 
-            // 중간 창살/격자 샤시 (Mullion 디테일)
             const mullionV = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.72, 0.06), frameMat);
             windowGroup.add(mullionV);
             const mullionH = new THREE.Mesh(new THREE.BoxGeometry(2.32, 0.06, 0.06), frameMat);
             windowGroup.add(mullionH);
 
-            windowGroup.position.set(0, 2.4, -halfRoom + wallThickness / 2);
+            windowGroup.position.set(0, 2.4, -halfRoom + wallThick / 2);
             intScene.add(windowGroup);
 
-            // 5. 방문 및 문틀, 손잡이 디테일 (Door: 1200 x 2400, positioned at wall end)
+            // 6. 방문 및 문틀, 손잡이 디테일 (Door: 1200 x 2400, 모서리 끝쪽 밀착 배치)
             const doorGroup = new THREE.Group();
-            const doorPanelMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.5 }); // 우드 도어 패널
-            const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.9 }); // 골드 손잡이
+            const doorPanelMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.5 });
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.9 });
 
-            // 문틀 (Door Jamb Frame)
             const doorJamb = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.46, 1.26), frameMat);
             doorJamb.position.x = -0.01;
             doorGroup.add(doorJamb);
 
-            // 도어 패널 (Door Panel)
             const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 1.2), doorPanelMat);
             doorGroup.add(doorPanel);
 
-            // 문 손잡이 (Door Handle & Rosette)
             const handleBase = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 16), handleMat);
             handleBase.rotation.z = Math.PI / 2;
             handleBase.position.set(0.05, 0, 0.45);
@@ -692,11 +714,10 @@
             handleLever.position.set(0.1, 0, 0.48);
             doorGroup.add(handleLever);
 
-            // 모서리 끝쪽에 밀착 배치 (Z = +1.3 근처)
-            doorGroup.position.set(-halfRoom + wallThickness / 2, 1.2, 1.3);
+            doorGroup.position.set(-halfRoom + wallThick / 2, 1.2, 1.3);
             intScene.add(doorGroup);
 
-            // 6. 가구 오브젝트 연동
+            // 7. 가구 오브젝트 연동
             if (interiorItems.length === 0) {
                 addInteriorObject('sofa', '모던 소파');
             } else {
@@ -739,12 +760,40 @@
             intScene = null;
         }
 
+        // 인테리어 페이지 전용 조명 환경 토글 (주간 / 야간 간접조명)
+        function toggleInteriorEnv() {
+            isIntNight = !isIntNight;
+            const btn = document.getElementById('int-env-btn');
+            if(isIntNight) {
+                if(intScene) intScene.background = new THREE.Color(0x020203);
+                if(intAmbientLight) intAmbientLight.intensity = 0.25;
+                if(intDirLight) {
+                    intDirLight.intensity = 1.6;
+                    intDirLight.position.set(-4, 10, 5);
+                }
+                btn.innerText = '🌙 야간';
+                btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow-sm';
+            } else {
+                if(intScene) intScene.background = new THREE.Color(0x09090b);
+                if(intAmbientLight) intAmbientLight.intensity = 0.7;
+                if(intDirLight) {
+                    intDirLight.intensity = 1.3;
+                    intDirLight.position.set(6, 10, 6);
+                }
+                btn.innerText = '☀️ 주간';
+                btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm';
+            }
+        }
+
         function changeRoomSurface(target, colorHex, roughnessVal) {
             const newMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: roughnessVal });
             if (target === 'floor') {
                 intFloorMesh.material = newMat;
             } else if (target === 'wall') {
-                intBackWallMesh.material = newMat;
+                intBackWallLeft.material = newMat;
+                intBackWallRight.material = newMat;
+                intBackWallTop.material = newMat;
+                intBackWallBottom.material = newMat;
                 intLeftWallMesh.material = newMat;
             }
         }
