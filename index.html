@@ -56,7 +56,6 @@
                     <h2 class="text-2xl font-bold tracking-tight text-zinc-900 uppercase tracking-widest">Material Spec Book</h2>
                     <p class="text-xs text-zinc-400 mt-1 uppercase tracking-wider">Architectural & Interior Finish Samples</p>
                 </div>
-                <!-- 가로 최대 5개 그리드 배치 -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10" id="material-card-grid"></div>
             </div>
 
@@ -83,7 +82,6 @@
                         </div>
                     </div>
 
-                    <!-- 3D 뷰어 검정 박스 (우측 하단 PBR 토글) -->
                     <div class="lg:col-span-2 bg-zinc-950 rounded-2xl relative h-[450px] overflow-hidden shadow-inner flex flex-col">
                         <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-300">
                             <span>💡 마우스 드래그로 회전 가능</span>
@@ -162,17 +160,17 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE -->
+        <!-- 5. INTERIOR PAGE (Applied 4000x4000x4000 Arch Spec) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200">
                     <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
-                    <p class="text-xs text-zinc-500 mt-1">방의 바닥/벽체 마감과 가구를 독립적으로 커스텀하세요.</p>
+                    <p class="text-xs text-zinc-500 mt-1">4000×4000mm 스튜디오 건축 공간 커스텀</p>
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-4 space-y-6">
                     <div class="space-y-3 pb-4 border-b border-zinc-200">
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">방 구조물 마감 (바닥/벽)</label>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">공간 구조물 마감</label>
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
                             <span class="text-xs font-bold text-zinc-800">바닥 (Floor)</span>
                             <div class="flex items-center gap-1.5">
@@ -220,7 +218,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 마우스 드래그로 스튜디오 공간을 자유롭게 회전하세요.</span>
+                    <span>💡 4000×4000 스튜디오 (창문·방문·걸레받이 적용)</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -303,7 +301,7 @@
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
         }
 
-        // --- 1. Material Page (Spec Book Grid Layout) ---
+        // --- 1. Material Page ---
         let currentMaterialData = null;
 
         function initMaterialList() {
@@ -317,7 +315,6 @@
                 const colorBox = document.createElement('div');
                 colorBox.className = 'w-full aspect-square bg-zinc-100 border border-zinc-200 group-hover:border-zinc-900 transition-colors duration-200 overflow-hidden relative shadow-sm';
                 
-                // 👉 텍스처 파일이 있는 자재(내추럴 오크 등)는 해당 이미지를 썸네일 배경으로 적용, 없으면 기존 단색 컬러 유지
                 if (mat.texturePath) {
                     colorBox.style.backgroundImage = `url('${mat.texturePath}')`;
                     colorBox.style.backgroundSize = 'cover';
@@ -585,10 +582,11 @@
             }
         }
 
-        // --- 3. Interior Page ---
+        // --- 3. Interior Page (4000x4000x4000 Scale with Skirting, Window, Door) ---
         let intScene, intCamera, intRenderer;
         let interiorItems = [];
         let intFloorMesh, intBackWallMesh, intLeftWallMesh;
+        let skirtingMeshes = [];
 
         function initInterior3D() {
             const container = document.getElementById('interior-canvas-container');
@@ -599,7 +597,7 @@
             intScene.background = new THREE.Color(0x09090b);
 
             intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            intCamera.position.set(6, 4, 7);
+            intCamera.position.set(8, 6, 10);
 
             intRenderer = new THREE.WebGLRenderer({ antialias: true });
             intRenderer.setSize(container.clientWidth, container.clientHeight);
@@ -607,31 +605,85 @@
 
             intScene.add(new THREE.AmbientLight(0xffffff, 0.7));
             const dir = new THREE.DirectionalLight(0xfff5ea, 1.2);
-            dir.position.set(4, 7, 4);
+            dir.position.set(6, 10, 6);
             intScene.add(dir);
 
+            // Scale factor: 1 unit = 1000mm (4m x 4m x 4m)
+            const roomSize = 4.0;
+            const halfRoom = roomSize / 2;
+
+            // 1. 바닥 (Floor: 4000 x 4000)
             intFloorMesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(5, 5),
+                new THREE.PlaneGeometry(roomSize, roomSize),
                 new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.6 })
             );
             intFloorMesh.rotation.x = -Math.PI / 2;
             intScene.add(intFloorMesh);
 
-            intBackWallMesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(5, 4),
-                new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 })
-            );
-            intBackWallMesh.position.set(0, 2, -2.5);
+            // 2. 벽체 (Walls: 4000 x 4000)
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, side: THREE.DoubleSide });
+
+            intBackWallMesh = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), wallMat);
+            intBackWallMesh.position.set(0, halfRoom, -halfRoom);
             intScene.add(intBackWallMesh);
 
-            intLeftWallMesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(5, 4),
-                new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 })
-            );
-            intLeftWallMesh.position.set(-2.5, 2, 0);
+            intLeftWallMesh = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), wallMat);
+            intLeftWallMesh.position.set(-halfRoom, halfRoom, 0);
             intLeftWallMesh.rotation.y = Math.PI / 2;
             intScene.add(intLeftWallMesh);
 
+            // 3. 걸레받이 (Skirting: 100mm = 0.1 units height, thickness 0.04)
+            const skirtingMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
+            const skirtingH = 0.1;
+            const skirtingThick = 0.04;
+
+            // Back wall skirting
+            const skirtBack = new THREE.Mesh(new THREE.BoxGeometry(roomSize, skirtingH, skirtingThick), skirtingMat);
+            skirtBack.position.set(0, skirtingH / 2, -halfRoom + skirtingThick / 2);
+            intScene.add(skirtBack);
+            skirtingMeshes.push(skirtBack);
+
+            // Left wall skirting
+            const skirtLeft = new THREE.Mesh(new THREE.BoxGeometry(skirtingThick, skirtingH, roomSize), skirtingMat);
+            skirtLeft.position.set(-halfRoom + skirtingThick / 2, skirtingH / 2, 0);
+            intScene.add(skirtLeft);
+            skirtingMeshes.push(skirtLeft);
+
+            // 4. 창문 (Window on Back Wall: 2400 x 1800, Sill height 1500 -> z = -halfRoom)
+            // Width: 2.4, Height: 1.8, Center Y: 1.5 + 0.9 = 2.4
+            const windowGroup = new THREE.Group();
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.8 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, transparent: true, opacity: 0.3 });
+            
+            // Window Glass
+            const winGlass = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 0.05), glassMat);
+            windowGroup.add(winGlass);
+            // Window Frame
+            const winFrame = new THREE.Mesh(new THREE.BoxGeometry(2.46, 1.86, 0.08), frameMat);
+            winFrame.position.z = -0.02;
+            windowGroup.add(winFrame);
+
+            windowGroup.position.set(0, 2.4, -halfRoom);
+            intScene.add(windowGroup);
+
+            // 5. 방문 (Door on Left Wall: 1200 x 2400, positioned at wall end -> z near +halfRoom)
+            // Width: 1.2, Height: 2.4, Center Y: 1.2, Z position: near edge (e.g. z = 1.2 to 1.9)
+            const doorGroup = new THREE.Group();
+            const doorPanelMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.5 }); // wood door
+            const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
+
+            const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 1.2), doorPanelMat);
+            doorGroup.add(doorPanel);
+
+            const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.46, 1.26), doorFrameMat);
+            doorFrame.position.x = -0.01;
+            doorGroup.add(doorFrame);
+
+            // Positioned at the end of the left wall (Corner edge)
+            doorGroup.position.set(-halfRoom, 1.2, 1.3);
+            intScene.add(doorGroup);
+
+            // 6. Furniture items
             if (interiorItems.length === 0) {
                 addInteriorObject('sofa', '모던 소파');
             } else {
@@ -643,9 +695,9 @@
 
             function updateCam() {
                 intCamera.position.x = radius * Math.sin(phi) * Math.sin(theta);
-                intCamera.position.y = radius * Math.cos(phi);
+                intCamera.position.y = Math.max(1, radius * Math.cos(phi));
                 intCamera.position.z = radius * Math.sin(phi) * Math.cos(theta);
-                intCamera.lookAt(0, 1, 0);
+                intCamera.lookAt(0, 2, 0);
             }
             updateCam();
 
@@ -672,10 +724,11 @@
                 intRenderer = null;
             }
             intScene = null;
+            skirtingMeshes = [];
         }
 
         function changeRoomSurface(target, colorHex, roughnessVal) {
-            const newMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: roughnessVal });
+            const newMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: roughnessVal, side: THREE.DoubleSide });
             if (target === 'floor') {
                 intFloorMesh.material = newMat;
             } else if (target === 'wall') {
