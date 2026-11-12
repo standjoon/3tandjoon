@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (GLB 스케치업 셸 연동 및 부위별 마감재 제어) -->
+        <!-- 5. INTERIOR PAGE (GLB 스케치업 셸 연동 및 밝은 조명 / 바닥 착지 고정) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -211,7 +211,7 @@
                             </div>
                         </div>
 
-                        <!-- WINDOW (Frame & Glass) -->
+                        <!-- WINDOW -->
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
                             <span class="text-xs font-bold text-zinc-800">WINDOW (창문 프레임 / 유리)</span>
                             <div class="flex flex-col gap-2 pt-1">
@@ -261,7 +261,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 스케치업 .glb 셸 모델 연동 완료 (마우스 드래그로 회전 가능)</span>
+                    <span>💡 스케치업 .glb 셸 모델 연동 완료 (밝은 조명 & 바닥 착지 적용)</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -625,7 +625,7 @@
             }
         }
 
-        // --- 3. Interior Page (.glb 스케치업 셸 연동 및 부위별 재질 제어) ---
+        // --- 3. Interior Page (.glb 스케치업 셸 연동 및 밝은 조명 / 바닥 착지 고정) ---
         let intScene, intCamera, intRenderer;
         let interiorItems = [];
         let glbRoomModel = null;
@@ -645,7 +645,8 @@
             if (intAnimId) cancelAnimationFrame(intAnimId);
 
             intScene = new THREE.Scene();
-            intScene.background = isIntNight ? new THREE.Color(0x020203) : new THREE.Color(0x09090b);
+            // 💡 밝고 화사한 미니멀 스튜디오 백그라운드 적용
+            intScene.background = isIntNight ? new THREE.Color(0x18181b) : new THREE.Color(0xf4f4f5);
 
             intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             intCamera.position.set(6, 4, 8);
@@ -654,12 +655,12 @@
             intRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(intRenderer.domElement);
 
-            // 스튜디오 환경광 및 디렉셔널 라이팅
-            intAmbientLight = new THREE.AmbientLight(0xffffff, isIntNight ? 0.3 : 0.8);
+            // 💡 조명 강도 대폭 상향 (방이 어둡지 않도록 개선)
+            intAmbientLight = new THREE.AmbientLight(0xffffff, 1.2);
             intScene.add(intAmbientLight);
 
-            intDirLight = new THREE.DirectionalLight(0xfff5ea, isIntNight ? 1.5 : 1.2);
-            intDirLight.position.set(5, 8, 5);
+            intDirLight = new THREE.DirectionalLight(0xffffff, 1.8);
+            intDirLight.position.set(5, 10, 5);
             intScene.add(intDirLight);
 
             // GLTFLoader로 깃허브에 업로드한 3D_ROOM.glb 로드
@@ -669,14 +670,14 @@
                 function (gltf) {
                     glbRoomModel = gltf.scene;
                     
-                    // 스케치업 모델 자동 센터링 및 적정 스케일 조정
+                    // 스케치업 모델 센터링
                     const box = new THREE.Box3().setFromObject(glbRoomModel);
                     const center = box.getCenter(new THREE.Vector3());
-                    glbRoomModel.position.sub(center); // 중심 맞춤
+                    glbRoomModel.position.sub(center);
                     
                     intScene.add(glbRoomModel);
 
-                    // 각 컴포넌트 이름(FLOOR, MAINWALL, SUBWALL, WINDOW, WINDOWGLASS)별로 분류
+                    // 컴포넌트 분류
                     glbMeshParts = { FLOOR: [], MAINWALL: [], SUBWALL: [], WINDOW: [], WINDOWGLASS: [] };
                     
                     glbRoomModel.traverse((child) => {
@@ -690,7 +691,6 @@
                                 glbMeshParts.SUBWALL.push(child);
                             } else if (nameUpper.includes('WINDOWGLASS') || nameUpper.includes('GLASS')) {
                                 glbMeshParts.WINDOWGLASS.push(child);
-                                // 유리 기본 투명도 세팅
                                 child.material.transparent = true;
                                 child.material.opacity = 0.35;
                             } else if (nameUpper.includes('WINDOW')) {
@@ -699,7 +699,8 @@
                         }
                     });
 
-                    console.log('GLB Room Loaded & Mapped Successfully:', glbMeshParts);
+                    // 모델 로드 완료 후 이미 배치된 가구들의 높이를 방 바닥면에 맞게 재조정
+                    updateAllObjectsFloorPosition();
                 },
                 undefined,
                 function (error) {
@@ -752,20 +753,20 @@
             isIntNight = !isIntNight;
             const btn = document.getElementById('int-env-btn');
             if(isIntNight) {
-                if(intScene) intScene.background = new THREE.Color(0x020203);
-                if(intAmbientLight) intAmbientLight.intensity = 0.3;
+                if(intScene) intScene.background = new THREE.Color(0x18181b);
+                if(intAmbientLight) intAmbientLight.intensity = 0.5;
                 if(intDirLight) {
-                    intDirLight.intensity = 1.5;
+                    intDirLight.intensity = 1.2;
                     intDirLight.position.set(-4, 8, 5);
                 }
                 btn.innerText = '🌙 야간';
                 btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow-sm';
             } else {
-                if(intScene) intScene.background = new THREE.Color(0x09090b);
-                if(intAmbientLight) intAmbientLight.intensity = 0.8;
+                if(intScene) intScene.background = new THREE.Color(0xf4f4f5);
+                if(intAmbientLight) intAmbientLight.intensity = 1.2;
                 if(intDirLight) {
-                    intDirLight.intensity = 1.2;
-                    intDirLight.position.set(5, 8, 5);
+                    intDirLight.intensity = 1.8;
+                    intDirLight.position.set(5, 10, 5);
                 }
                 btn.innerText = '☀️ 주간';
                 btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm';
@@ -803,30 +804,54 @@
             });
         }
 
+        // 💡 가구를 생성할 때 방 모델의 실제 바닥면(box.min.y)에 정확히 밀착되도록 계산
         function addInteriorObject(type, name) {
             let mesh;
             const defaultColor = 0x3d2817;
             const mat = new THREE.MeshStandardMaterial({ color: defaultColor, roughness: 0.5 });
 
+            let objectHeight = 0.7; // 기본 높이
+
             if(type === 'sofa') {
-                mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.7, 0.8), mat);
-                mesh.position.set(0, 0.35, 0);
+                objectHeight = 0.7;
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, objectHeight, 0.8), mat);
+                mesh.position.set(0, 0, 0);
             } else if(type === 'desk') {
-                mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.8, 0.8), mat);
-                mesh.position.set(0, 0.4, -1.0);
+                objectHeight = 0.8;
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, objectHeight, 0.8), mat);
+                mesh.position.set(0, 0, -1.0);
             } else if(type === 'plant') {
-                mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0x2e4f3f }));
-                mesh.position.set(1.2, 0.35, 1.2);
+                objectHeight = 0.7;
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, objectHeight, 16), new THREE.MeshStandardMaterial({ color: 0x2e4f3f }));
+                mesh.position.set(1.2, 0, 1.2);
             } else if(type === 'lamp') {
-                mesh = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.0, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 }));
-                mesh.position.set(-1.2, 0.5, 1.2);
+                objectHeight = 1.0;
+                mesh = new THREE.Mesh(new THREE.ConeGeometry(0.3, objectHeight, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 }));
+                mesh.position.set(-1.2, 0, 1.2);
             }
 
             if(mesh) {
+                // 방 모델 바닥면 기준 Y 좌표 자동 계산 적용
+                if(glbRoomModel) {
+                    const box = new THREE.Box3().setFromObject(glbRoomModel);
+                    mesh.position.y = box.min.y + (objectHeight / 2);
+                } else {
+                    mesh.position.y = objectHeight / 2;
+                }
+
                 if(intScene) intScene.add(mesh);
-                interiorItems.push({ id: Date.now(), name: name, mesh: mesh });
+                interiorItems.push({ id: Date.now(), name: name, mesh: mesh, height: objectHeight });
                 renderInteriorList();
             }
+        }
+
+        // 이미 생성된 가구들의 바닥 위치 일괄 갱신 함수
+        function updateAllObjectsFloorPosition() {
+            if(!glbRoomModel || interiorItems.length === 0) return;
+            const box = new THREE.Box3().setFromObject(glbRoomModel);
+            interiorItems.forEach(item => {
+                item.mesh.position.y = box.min.y + (item.height / 2);
+            });
         }
 
         function removeInteriorObject(id) {
