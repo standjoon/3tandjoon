@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (GLB 스케치업 셸 연동 및 밝은 조명 / 바닥 착지 고정) -->
+        <!-- 5. INTERIOR PAGE -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -193,8 +193,8 @@
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
                             <span class="text-xs font-bold text-zinc-800">MAINWALL (메인 벽체)</span>
                             <div class="flex items-center gap-1.5">
+                                <button onclick="changeGlbComponentMaterial('MAINWALL', 0xffffff, 0.9)" class="w-6 h-6 rounded bg-[#ffffff] border border-zinc-300 shadow-sm hover:scale-110 transition" title="순백색 페인트"></button>
                                 <button onclick="changeGlbComponentMaterial('MAINWALL', 0x888888, 0.8)" class="w-6 h-6 rounded bg-[#888888] border border-zinc-300 shadow-sm hover:scale-110 transition" title="콘크리트"></button>
-                                <button onclick="changeGlbComponentMaterial('MAINWALL', 0xfafafa, 0.9)" class="w-6 h-6 rounded bg-[#fafafa] border border-zinc-300 shadow-sm hover:scale-110 transition" title="화이트 페인트"></button>
                                 <button onclick="changeGlbComponentMaterial('MAINWALL', 0x3d2817, 0.5)" class="w-6 h-6 rounded bg-[#3d2817] border border-zinc-300 shadow-sm hover:scale-110 transition" title="우드 루버"></button>
                                 <button onclick="changeGlbComponentMaterial('MAINWALL', 0x8c3b2e, 0.9)" class="w-6 h-6 rounded bg-[#8c3b2e] border border-zinc-300 shadow-sm hover:scale-110 transition" title="레드 브릭"></button>
                             </div>
@@ -204,8 +204,8 @@
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-1.5">
                             <span class="text-xs font-bold text-zinc-800">SUBWALL (서브 벽체)</span>
                             <div class="flex items-center gap-1.5">
+                                <button onclick="changeGlbComponentMaterial('SUBWALL', 0xffffff, 0.9)" class="w-6 h-6 rounded bg-[#ffffff] border border-zinc-300 shadow-sm hover:scale-110 transition" title="순백색 페인트"></button>
                                 <button onclick="changeGlbComponentMaterial('SUBWALL', 0x888888, 0.8)" class="w-6 h-6 rounded bg-[#888888] border border-zinc-300 shadow-sm hover:scale-110 transition" title="콘크리트"></button>
-                                <button onclick="changeGlbComponentMaterial('SUBWALL', 0xfafafa, 0.9)" class="w-6 h-6 rounded bg-[#fafafa] border border-zinc-300 shadow-sm hover:scale-110 transition" title="화이트 페인트"></button>
                                 <button onclick="changeGlbComponentMaterial('SUBWALL', 0x3d2817, 0.5)" class="w-6 h-6 rounded bg-[#3d2817] border border-zinc-300 shadow-sm hover:scale-110 transition" title="우드 루버"></button>
                                 <button onclick="changeGlbComponentMaterial('SUBWALL', 0x18181b, 0.2)" class="w-6 h-6 rounded bg-[#18181b] border border-zinc-300 shadow-sm hover:scale-110 transition" title="다크 스틸"></button>
                             </div>
@@ -261,7 +261,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 스케치업 .glb 셸 모델 연동 완료 (밝은 조명 & 바닥 착지 적용)</span>
+                    <span>💡 백색 스튜디오 셸 및 옅은 회색 테두리선(Edge Lines) 적용 완료</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -625,7 +625,7 @@
             }
         }
 
-        // --- 3. Interior Page (.glb 스케치업 셸 연동 및 밝은 조명 / 바닥 착지 고정) ---
+        // --- 3. Interior Page (.glb 스케치업 셸 연동 및 백색 초기화 / 옅은 테두리선 추가) ---
         let intScene, intCamera, intRenderer;
         let interiorItems = [];
         let glbRoomModel = null;
@@ -645,7 +645,6 @@
             if (intAnimId) cancelAnimationFrame(intAnimId);
 
             intScene = new THREE.Scene();
-            // 💡 밝고 화사한 미니멀 스튜디오 백그라운드 적용
             intScene.background = isIntNight ? new THREE.Color(0x18181b) : new THREE.Color(0xf4f4f5);
 
             intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
@@ -655,7 +654,6 @@
             intRenderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(intRenderer.domElement);
 
-            // 💡 조명 강도 대폭 상향 (방이 어둡지 않도록 개선)
             intAmbientLight = new THREE.AmbientLight(0xffffff, 1.2);
             intScene.add(intAmbientLight);
 
@@ -670,19 +668,34 @@
                 function (gltf) {
                     glbRoomModel = gltf.scene;
                     
-                    // 스케치업 모델 센터링
                     const box = new THREE.Box3().setFromObject(glbRoomModel);
                     const center = box.getCenter(new THREE.Vector3());
                     glbRoomModel.position.sub(center);
                     
                     intScene.add(glbRoomModel);
 
-                    // 컴포넌트 분류
+                    // 컴포넌트 분류 및 초기 백색(White) 재질 적용 + 모서리 옅은 회색 테두리선(Edge Lines) 생성
                     glbMeshParts = { FLOOR: [], MAINWALL: [], SUBWALL: [], WINDOW: [], WINDOWGLASS: [] };
                     
                     glbRoomModel.traverse((child) => {
                         if (child.isMesh) {
                             const nameUpper = child.name.toUpperCase();
+                            
+                            // 💡 초기 벽체/바닥 색상을 깔끔한 순백색(White, 0xfafafa)으로 지정
+                            if (!nameUpper.includes('GLASS') && !nameUpper.includes('WINDOW')) {
+                                child.material = new THREE.MeshStandardMaterial({
+                                    color: 0xfafafa,
+                                    roughness: 0.7,
+                                    metalness: 0.05
+                                });
+                            }
+
+                            // 💡 옅은 회색(0xd4d4d8) 테두리선(Edge Lines) 추가
+                            const edges = new THREE.EdgesGeometry(child.geometry);
+                            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xd4d4d8, linewidth: 1 });
+                            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+                            child.add(wireframe);
+
                             if (nameUpper.includes('FLOOR')) {
                                 glbMeshParts.FLOOR.push(child);
                             } else if (nameUpper.includes('MAINWALL')) {
@@ -699,7 +712,6 @@
                         }
                     });
 
-                    // 모델 로드 완료 후 이미 배치된 가구들의 높이를 방 바닥면에 맞게 재조정
                     updateAllObjectsFloorPosition();
                 },
                 undefined,
@@ -708,10 +720,8 @@
                 }
             );
 
-            // 가구 아이템 추가 반영
             interiorItems.forEach(item => intScene.add(item.mesh));
 
-            // 마우스 회전 컨트롤러
             let isDrag = false, prevMouse = {x:0, y:0};
             let theta = Math.PI/4, phi = Math.PI/4, radius = 8;
 
@@ -748,7 +758,6 @@
             intScene = null;
         }
 
-        // 인테리어 페이지 주/야간 조명 토글
         function toggleInteriorEnv() {
             isIntNight = !isIntNight;
             const btn = document.getElementById('int-env-btn');
@@ -773,7 +782,6 @@
             }
         }
 
-        // 스케치업 컴포넌트별 마감재 변경 함수
         function changeGlbComponentMaterial(componentName, colorHex, roughnessVal) {
             const targetMeshes = glbMeshParts[componentName];
             if (!targetMeshes || targetMeshes.length === 0) {
@@ -784,7 +792,7 @@
             const newMat = new THREE.MeshStandardMaterial({
                 color: colorHex,
                 roughness: roughnessVal,
-                metalness: 0.1
+                metalness: 0.05
             });
 
             targetMeshes.forEach(mesh => {
@@ -792,7 +800,6 @@
             });
         }
 
-        // 창문 유리 투명도 조절 함수
         function changeWindowGlassOpacity(opacityVal) {
             const glassMeshes = glbMeshParts['WINDOWGLASS'];
             if (!glassMeshes || glassMeshes.length === 0) return;
@@ -804,13 +811,12 @@
             });
         }
 
-        // 💡 가구를 생성할 때 방 모델의 실제 바닥면(box.min.y)에 정확히 밀착되도록 계산
         function addInteriorObject(type, name) {
             let mesh;
             const defaultColor = 0x3d2817;
             const mat = new THREE.MeshStandardMaterial({ color: defaultColor, roughness: 0.5 });
 
-            let objectHeight = 0.7; // 기본 높이
+            let objectHeight = 0.7;
 
             if(type === 'sofa') {
                 objectHeight = 0.7;
@@ -831,7 +837,6 @@
             }
 
             if(mesh) {
-                // 방 모델 바닥면 기준 Y 좌표 자동 계산 적용
                 if(glbRoomModel) {
                     const box = new THREE.Box3().setFromObject(glbRoomModel);
                     mesh.position.y = box.min.y + (objectHeight / 2);
@@ -845,7 +850,6 @@
             }
         }
 
-        // 이미 생성된 가구들의 바닥 위치 일괄 갱신 함수
         function updateAllObjectsFloorPosition() {
             if(!glbRoomModel || interiorItems.length === 0) return;
             const box = new THREE.Box3().setFromObject(glbRoomModel);
