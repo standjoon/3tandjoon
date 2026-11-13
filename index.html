@@ -664,7 +664,7 @@
             }
         }
 
-        // --- 3. Interior Page (안정적인 가구 추가 및 캔버스 관리 시스템) ---
+        // --- 3. Interior Page (정확한 바닥 밀착 좌표 보정 시스템) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let placedFurnitureList = []; 
@@ -686,13 +686,11 @@
         function initInterior3D() {
             const container = document.getElementById('interior-canvas-container');
             
-            // 기존 캔버스 래퍼가 있다면 재사용하고, 없으면 생성
             let canvasWrapper = container.querySelector('#three-canvas-wrapper');
             if (!canvasWrapper) {
                 canvasWrapper = document.createElement('div');
                 canvasWrapper.id = 'three-canvas-wrapper';
                 canvasWrapper.className = 'w-full h-full cursor-grab active:cursor-grabbing absolute inset-0';
-                // 힌트 박스나 오버레이 뒤로 들어가도록 첫 번째 자식으로 삽입
                 container.insertBefore(canvasWrapper, container.firstChild);
             } else {
                 canvasWrapper.innerHTML = '';
@@ -794,7 +792,6 @@
                         }
                     });
 
-                    // 이미 배치된 가구들이 있다면 씬에 다시 추가
                     if (placedFurnitureList.length > 0) {
                         if(transparentGridHelper) transparentGridHelper.visible = true;
                         placedFurnitureList.forEach(item => {
@@ -808,7 +805,6 @@
                 }
             );
 
-            // 💡 마우스 인터랙션 및 카메라 회전 제어
             let isDragging = false;
             let startMouse = { x: 0, y: 0 };
             let isCamDrag = false, prevMouse = {x:0, y:0};
@@ -843,7 +839,6 @@
             window.onmouseup = e => {
                 isCamDrag = false;
                 if (!isDragging) {
-                    // 드래그가 아닌 단순 클릭 시 가구 선택 레이캐스팅 수행
                     const rect = canvasWrapper.getBoundingClientRect();
                     mouse.x = ((e.clientX - rect.left) / canvasWrapper.clientWidth) * 2 - 1;
                     mouse.y = -((e.clientY - rect.top) / canvasWrapper.clientHeight) * 2 + 1;
@@ -868,7 +863,6 @@
             function animateInt() {
                 intAnimId = requestAnimationFrame(animateInt);
                 
-                // 매 프레임마다 렌더러 크기가 컨테이너와 일치하도록 보정
                 if (intRenderer && container) {
                     const width = container.clientWidth;
                     const height = container.clientHeight;
@@ -983,19 +977,22 @@
         };
 
         const furnitureOffsets = {
-            'ROUNDTABLE.glb': 0.12, 
+            'ROUNDTABLE.glb': 0.0, 
             'SOFA2.glb': 0.0,       
             'BED.glb': 0.0,
             'SIDETABLE.glb': 0.0
         };
 
-        // 💡 가구 추가 함수 안정성 보완
+        // --- 💡 바닥 밀착 좌표 정밀 보정 및 회전 초기화 로직 ---
         function addFurnitureAsset(fileName, displayName) {
             const loader = new THREE.GLTFLoader();
             loader.load(fileName, function (gltf) {
                 const model = gltf.scene;
                 const scaleVal = furnitureScales[fileName] || 1.0;
                 model.scale.set(scaleVal, scaleVal, scaleVal);
+
+                // 회전값 초기화 (기울어짐 방지)
+                model.rotation.set(0, 0, 0);
 
                 model.traverse((child) => {
                     if (child.isMesh) {
@@ -1009,19 +1006,19 @@
 
                 const uniqueId = 'furn_' + Date.now();
                 
-                // 방 모델이 아직 완전히 로드되지 않았을 경우를 대비한 안전한 기본 Y 위치 설정
-                let baseY = 0;
-                if (glbRoomModel) {
-                    const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
-                    baseY = roomBox.min.y;
-                }
-                
-                const yOffset = furnitureOffsets[fileName] || 0.0;
-                model.position.set(0, baseY + yOffset, 0);
+                // 1단계: 모델을 잠시 씬에 더해 정확한 바운딩 박스를 계산
+                intScene.add(model);
+                model.position.set(0, 0, 0);
+                model.updateMatrixWorld(true);
 
-                if (intScene) {
-                    intScene.add(model);
-                }
+                const modelBox = new THREE.Box3().setFromObject(model);
+                const floorY = glbRoomModel ? new THREE.Box3().setFromObject(glbRoomModel).min.y : 0;
+                
+                // 2단계: 가구의 최하단(min.y)과 방 바닥(floorY)의 차이를 계산하여 정확히 바닥에 안착시킴
+                const yDelta = modelBox.min.y - floorY;
+                const manualOffset = furnitureOffsets[fileName] || 0.0;
+                model.position.y = -yDelta + manualOffset;
+
                 if(transparentGridHelper) transparentGridHelper.visible = true;
 
                 const furnitureItem = {
@@ -1036,7 +1033,7 @@
 
             }, undefined, function (error) {
                 console.error(`${fileName} 로드 실패:`, error);
-                alert(`${fileName} 파일 로드에 실패했습니다. 파일이 같은 경로에 있는지 확인해주세요.`);
+                alert(`${fileName} 파일 로드에 실패했습니다. 파일 경로를 확인해주세요.`);
             });
         }
 
