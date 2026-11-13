@@ -164,14 +164,9 @@
         <!-- 5. INTERIOR PAGE -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm shrink-0">
-                <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
-                        <p class="text-xs text-zinc-500 mt-1">다중 가구 배치 스튜디오</p>
-                    </div>
-                    <button onclick="toggleInteriorEnv()" id="int-env-btn" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm">
-                        ☀️ 주간
-                    </button>
+                <div class="p-6 border-b border-zinc-200">
+                    <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
+                    <p class="text-xs text-zinc-500 mt-1">다중 가구 배치 스튜디오</p>
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-4 space-y-6">
@@ -258,7 +253,7 @@
                         </div>
                     </div>
 
-                    <!-- 💡 배치된 가구 목록 관리 (선택 버튼 제거, 순수 목록만 남김) -->
+                    <!-- 💡 배치된 가구 목록 관리 -->
                     <div class="space-y-3">
                         <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 목록 (3D 클릭 선택 가능)</label>
                         <div id="interior-objects-list" class="space-y-2">
@@ -280,7 +275,17 @@
                     <span>💡 가구를 직접 클릭하면 머리 위에 이동/회전 컨트롤러가 나타납니다.</span>
                 </div>
 
-                <!-- 💡 가구를 따라다니는 플로팅 제어 패널 (동적 좌표 연동) -->
+                <!-- 💡 3D 캔버스 우측 하단에 배치된 주간/야간 선택형 컨트롤러 탭 -->
+                <div class="absolute bottom-6 right-6 z-20 bg-zinc-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-zinc-800 shadow-2xl flex items-center gap-1.5">
+                    <button onclick="setEnvironmentMode('day')" id="env-btn-day" class="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center gap-1.5">
+                        <span>☀️</span> 주간
+                    </button>
+                    <button onclick="setEnvironmentMode('night')" id="env-btn-night" class="px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5">
+                        <span>🌙</span> 야간
+                    </button>
+                </div>
+
+                <!-- 💡 가구를 따라다니는 플로팅 제어 패널 -->
                 <div id="floating-gizmo-panel" class="absolute hidden z-30 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-2xl rounded-2xl p-3 w-48 transition-all duration-75 select-none -translate-x-1/2 -translate-y-full mt-[-15px]">
                     <div class="flex items-center justify-between border-b border-zinc-100 pb-1.5 mb-2">
                         <span id="floating-furniture-name" class="text-[11px] font-bold text-amber-600 truncate">선택된 가구</span>
@@ -659,7 +664,7 @@
             }
         }
 
-        // --- 3. Interior Page (가구 클릭 및 2D 플로팅 기즈모 시스템) ---
+        // --- 3. Interior Page (주간/야간 선택형 탭 시스템 및 플로팅 기즈모) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let placedFurnitureList = []; 
@@ -675,7 +680,6 @@
             WINDOWGLASS: []
         };
         let intAmbientLight, intDirLight;
-        let isIntNight = false;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
 
@@ -685,15 +689,14 @@
             canvasWrapper.id = 'three-canvas-wrapper';
             canvasWrapper.className = 'w-full h-full cursor-grab active:cursor-grabbing';
             
-            // 기존 캔버스 래퍼 내부의 기존 canvas들 제거 후 새로 삽입
             const existingCanvas = container.querySelector('#three-canvas-wrapper');
             if(existingCanvas) existingCanvas.remove();
-            container.appendChild(canvasWrapper);
+            container.insertBefore(canvasWrapper, container.firstChild);
 
             if (intAnimId) cancelAnimationFrame(intAnimId);
 
             intScene = new THREE.Scene();
-            intScene.background = isIntNight ? new THREE.Color(0x18181b) : new THREE.Color(0xf4f4f5);
+            intScene.background = new THREE.Color(0xf4f4f5); // 초기 주간 배경
 
             intCamera = new THREE.PerspectiveCamera(45, canvasWrapper.clientWidth / canvasWrapper.clientHeight, 0.1, 1000);
             intCamera.position.set(6, 4, 8);
@@ -799,54 +802,8 @@
                 }
             );
 
-            // 💡 3D 캔버스 클릭 이벤트 (가구 선택 레이캐스팅)
             let isDragging = false;
             let startMouse = { x: 0, y: 0 };
-            
-            canvasWrapper.onmousedown = e => {
-                isDragging = false;
-                startMouse = { x: e.clientX, y: e.clientY };
-            };
-
-            canvasWrapper.onmousemove = e => {
-                if (Math.abs(e.clientX - startMouse.x) > 3 || Math.abs(e.clientY - startMouse.y) > 3) {
-                    isDragging = true;
-                }
-            };
-
-            canvasWrapper.onmouseup = e => {
-                if (!isDragging) {
-                    // 클릭 이벤트로 판정하여 가구 선택 수행
-                    const rect = canvasWrapper.getBoundingClientRect();
-                    mouse.x = ((e.clientX - rect.left) / canvasWrapper.clientWidth) * 2 - 1;
-                    mouse.y = -((e.clientY - rect.top) / canvasWrapper.clientHeight) * 2 + 1;
-
-                    raycaster.setFromCamera(mouse, intCamera);
-                    
-                    // 배치된 가구들의 모델만 추출
-                    const furnitureObjects = placedFurnitureList.map(item => item.model);
-                    const intersects = raycaster.intersectObjects(furnitureObjects, true);
-
-                    if (intersects.length > 0) {
-                        // 클릭된 부모 가구 찾기
-                        let hitObj = intersects[0].object;
-                        let matchedFurniture = null;
-                        while (hitObj) {
-                            matchedFurniture = placedFurnitureList.find(item => item.model === hitObj);
-                            if (matchedFurniture) break;
-                            hitObj = hitObj.parent;
-                        }
-                        if (matchedFurniture) {
-                            selectFurniture(matchedFurniture.id);
-                        }
-                    } else {
-                        // 빈 공간 클릭 시 해제하려면 주석 해제 (기존 선택 유지 원할 시 생략 가능)
-                        // deselectFurniture();
-                    }
-                }
-            };
-
-            // 카메라 회전 드래그 로직
             let isCamDrag = false, prevMouse = {x:0, y:0};
             let theta = Math.PI/4, phi = Math.PI/4, radius = 8;
 
@@ -895,7 +852,6 @@
                 intAnimId = requestAnimationFrame(animateInt);
                 intRenderer.render(intScene, intCamera);
 
-                // 💡 선택된 가구가 있다면 매 프레임마다 3D 좌표를 2D 화면 좌표로 변환하여 플로팅 UI 위치 갱신
                 if (selectedFurniture) {
                     updateFloatingGizmoPosition();
                 }
@@ -903,7 +859,6 @@
             animateInt();
         }
 
-        // 💡 3D 가구 위치를 2D 화면 오버레이 좌표로 변환하는 함수
         function updateFloatingGizmoPosition() {
             if (!selectedFurniture) return;
             const gizmoPanel = document.getElementById('floating-gizmo-panel');
@@ -913,7 +868,6 @@
             const worldPos = new THREE.Vector3();
             selectedFurniture.model.getWorldPosition(worldPos);
             
-            // 가구 상단으로 위치 보정 (Y축 위쪽으로 살짝 띄움)
             const box = new THREE.Box3().setFromObject(selectedFurniture.model);
             worldPos.y = box.max.y + 0.2;
 
@@ -922,7 +876,6 @@
             const x = (worldPos.x *  .5 + .5) * container.clientWidth;
             const y = (worldPos.y * -.5 + .5) * container.clientHeight;
 
-            // 화면 밖으로 나가거나 카메라 뒤로 갔을 때 처리
             if (worldPos.z > 1) {
                 gizmoPanel.classList.add('hidden');
             } else {
@@ -940,27 +893,33 @@
             intScene = null;
         }
 
-        function toggleInteriorEnv() {
-            isIntNight = !isIntNight;
-            const btn = document.getElementById('int-env-btn');
-            if(isIntNight) {
-                if(intScene) intScene.background = new THREE.Color(0x18181b);
-                if(intAmbientLight) intAmbientLight.intensity = 0.5;
-                if(intDirLight) {
-                    intDirLight.intensity = 1.2;
-                    intDirLight.position.set(4, 7, -4);
-                }
-                btn.innerText = '🌙 야간';
-                btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow-sm';
-            } else {
-                if(intScene) intScene.background = new THREE.Color(0xf4f4f5);
-                if(intAmbientLight) intAmbientLight.intensity = 1.2;
-                if(intDirLight) {
+        // --- 💡 주간 / 야간 선택형 탭 전환 함수 ---
+        function setEnvironmentMode(mode) {
+            const btnDay = document.getElementById('env-btn-day');
+            const btnNight = document.getElementById('env-btn-night');
+
+            if (mode === 'day') {
+                // 주간 모드 스타일 활성화
+                btnDay.className = "px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center gap-1.5";
+                btnNight.className = "px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5";
+
+                if (intScene) intScene.background = new THREE.Color(0xf4f4f5);
+                if (intAmbientLight) intAmbientLight.intensity = 1.2;
+                if (intDirLight) {
                     intDirLight.intensity = 1.6;
                     intDirLight.position.set(-4, 7, -4);
                 }
-                btn.innerText = '☀️ 주간';
-                btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm';
+            } else {
+                // 야간 모드 스타일 활성화
+                btnDay.className = "px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5";
+                btnNight.className = "px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center gap-1.5";
+
+                if (intScene) intScene.background = new THREE.Color(0x18181b);
+                if (intAmbientLight) intAmbientLight.intensity = 0.5;
+                if (intDirLight) {
+                    intDirLight.intensity = 1.2;
+                    intDirLight.position.set(4, 7, -4);
+                }
             }
         }
 
@@ -1023,7 +982,6 @@
 
                 const uniqueId = 'furn_' + Date.now();
                 const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
-                const modelBox = new THREE.Box3().setFromObject(model);
                 
                 const yOffset = furnitureOffsets[fileName] || 0.0;
                 model.position.set(0, (roomBox.min.y - modelBox.min.y) + yOffset, 0);
