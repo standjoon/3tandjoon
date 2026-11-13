@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE -->
+        <!-- 5. INTERIOR PAGE (SOFA.glb 토글 연동) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -235,13 +235,21 @@
                         </div>
                     </div>
 
+                    <!-- 💡 SOFA.glb 껐다 켤 수 있는 토글형 가구 에셋 섹션 -->
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">커스텀 가구 추가</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="addInteriorObject('sofa', '모던 소파')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">🛋️ 모던 소파</button>
-                            <button onclick="addInteriorObject('desk', '우드 데스크')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">🪑 우드 데스크</button>
-                            <button onclick="addInteriorObject('plant', '인테리어 플랜트')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">🪴 플랜트</button>
-                            <button onclick="addInteriorObject('lamp', '플로어 램프')" class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-medium rounded-xl transition text-left">💡 램프</button>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">커스텀 가구 에셋 (SOFA)</label>
+                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">🛋️</span>
+                                <div>
+                                    <h4 class="text-xs font-bold text-zinc-900">SOFA.glb</h4>
+                                    <p class="text-[10px] text-zinc-400">커스텀 소파 모델</p>
+                                </div>
+                            </div>
+                            <!-- 켜고 끄는 토글 버튼 -->
+                            <button onclick="toggleSofaAsset()" id="sofa-toggle-btn" class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm">
+                                배치하기 (ON)
+                            </button>
                         </div>
                     </div>
 
@@ -261,7 +269,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 백색 스튜디오 셸 및 옅은 회색 테두리선(Edge Lines) 적용 완료</span>
+                    <span>💡 SOFA.glb 토글 연동 스튜디오 완료</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -625,10 +633,12 @@
             }
         }
 
-        // --- 3. Interior Page (.glb 스케치업 셸 연동 및 백색 초기화 / 옅은 테두리선 추가) ---
+        // --- 3. Interior Page (.glb 스케치업 셸 및 SOFA.glb 토글 연동) ---
         let intScene, intCamera, intRenderer;
-        let interiorItems = [];
         let glbRoomModel = null;
+        let sofaModel = null; // 💡 SOFA.glb 인스턴스 저장 변수
+        let isSofaActive = false; // 💡 소파 켜짐/꺼짐 상태 관리
+        
         let glbMeshParts = {
             FLOOR: [],
             MAINWALL: [],
@@ -661,7 +671,7 @@
             intDirLight.position.set(5, 10, 5);
             intScene.add(intDirLight);
 
-            // GLTFLoader로 깃허브에 업로드한 3D_ROOM.glb 로드
+            // 1. 방 뼈대 3D_ROOM.glb 로드
             const loader = new THREE.GLTFLoader();
             loader.load(
                 '3D_ROOM.glb',
@@ -674,14 +684,12 @@
                     
                     intScene.add(glbRoomModel);
 
-                    // 컴포넌트 분류 및 초기 백색(White) 재질 적용 + 모서리 옅은 회색 테두리선(Edge Lines) 생성
                     glbMeshParts = { FLOOR: [], MAINWALL: [], SUBWALL: [], WINDOW: [], WINDOWGLASS: [] };
                     
                     glbRoomModel.traverse((child) => {
                         if (child.isMesh) {
                             const nameUpper = child.name.toUpperCase();
                             
-                            // 💡 초기 벽체/바닥 색상을 깔끔한 순백색(White, 0xfafafa)으로 지정
                             if (!nameUpper.includes('GLASS') && !nameUpper.includes('WINDOW')) {
                                 child.material = new THREE.MeshStandardMaterial({
                                     color: 0xfafafa,
@@ -689,12 +697,6 @@
                                     metalness: 0.05
                                 });
                             }
-
-                            // 💡 옅은 회색(0xd4d4d8) 테두리선(Edge Lines) 추가
-                            const edges = new THREE.EdgesGeometry(child.geometry);
-                            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xd4d4d8, linewidth: 1 });
-                            const wireframe = new THREE.LineSegments(edges, lineMaterial);
-                            child.add(wireframe);
 
                             if (nameUpper.includes('FLOOR')) {
                                 glbMeshParts.FLOOR.push(child);
@@ -712,15 +714,17 @@
                         }
                     });
 
-                    updateAllObjectsFloorPosition();
+                    // 만약 페이지 전환 전 소파가 켜져있었다면 재배치
+                    if (isSofaActive && sofaModel) {
+                        intScene.add(sofaModel);
+                        updateSofaFloorPosition();
+                    }
                 },
                 undefined,
                 function (error) {
                     console.error('An error happened while loading 3D_ROOM.glb:', error);
                 }
             );
-
-            interiorItems.forEach(item => intScene.add(item.mesh));
 
             let isDrag = false, prevMouse = {x:0, y:0};
             let theta = Math.PI/4, phi = Math.PI/4, radius = 8;
@@ -785,16 +789,14 @@
         function changeGlbComponentMaterial(componentName, colorHex, roughnessVal) {
             const targetMeshes = glbMeshParts[componentName];
             if (!targetMeshes || targetMeshes.length === 0) {
-                alert(`[${componentName}] 컴포넌트를 모델에서 찾지 못했습니다. 스케치업 컴포넌트 이름을 다시 확인해주세요.`);
+                alert(`[${componentName}] 컴포넌트를 찾지 못했습니다.`);
                 return;
             }
-
             const newMat = new THREE.MeshStandardMaterial({
                 color: colorHex,
                 roughness: roughnessVal,
                 metalness: 0.05
             });
-
             targetMeshes.forEach(mesh => {
                 mesh.material = newMat;
             });
@@ -803,7 +805,6 @@
         function changeWindowGlassOpacity(opacityVal) {
             const glassMeshes = glbMeshParts['WINDOWGLASS'];
             if (!glassMeshes || glassMeshes.length === 0) return;
-
             glassMeshes.forEach(mesh => {
                 mesh.material.transparent = true;
                 mesh.material.opacity = opacityVal;
@@ -811,101 +812,68 @@
             });
         }
 
-        function addInteriorObject(type, name) {
-            let mesh;
-            const defaultColor = 0x3d2817;
-            const mat = new THREE.MeshStandardMaterial({ color: defaultColor, roughness: 0.5 });
-
-            let objectHeight = 0.7;
-
-            if(type === 'sofa') {
-                objectHeight = 0.7;
-                mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, objectHeight, 0.8), mat);
-                mesh.position.set(0, 0, 0);
-            } else if(type === 'desk') {
-                objectHeight = 0.8;
-                mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, objectHeight, 0.8), mat);
-                mesh.position.set(0, 0, -1.0);
-            } else if(type === 'plant') {
-                objectHeight = 0.7;
-                mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, objectHeight, 16), new THREE.MeshStandardMaterial({ color: 0x2e4f3f }));
-                mesh.position.set(1.2, 0, 1.2);
-            } else if(type === 'lamp') {
-                objectHeight = 1.0;
-                mesh = new THREE.Mesh(new THREE.ConeGeometry(0.3, objectHeight, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 }));
-                mesh.position.set(-1.2, 0, 1.2);
-            }
-
-            if(mesh) {
-                if(glbRoomModel) {
-                    const box = new THREE.Box3().setFromObject(glbRoomModel);
-                    mesh.position.y = box.min.y + (objectHeight / 2);
-                } else {
-                    mesh.position.y = objectHeight / 2;
-                }
-
-                if(intScene) intScene.add(mesh);
-                interiorItems.push({ id: Date.now(), name: name, mesh: mesh, height: objectHeight });
-                renderInteriorList();
-            }
-        }
-
-        function updateAllObjectsFloorPosition() {
-            if(!glbRoomModel || interiorItems.length === 0) return;
-            const box = new THREE.Box3().setFromObject(glbRoomModel);
-            interiorItems.forEach(item => {
-                item.mesh.position.y = box.min.y + (item.height / 2);
-            });
-        }
-
-        function removeInteriorObject(id) {
-            const index = interiorItems.findIndex(item => item.id === id);
-            if(index !== -1) {
-                if(intScene) intScene.remove(interiorItems[index].mesh);
-                interiorItems.splice(index, 1);
-                renderInteriorList();
-            }
-        }
-
-        function changeItemColor(id, hexColor) {
-            const item = interiorItems.find(i => i.id === id);
-            if(item && item.mesh.material && item.mesh.material.color) {
-                item.mesh.material.color.setHex(hexColor);
-            }
-        }
-
-        function renderInteriorList() {
+        // --- 💡 SOFA.glb 껐다 켜기(Toggle) 제어 함수 ---
+        function toggleSofaAsset() {
+            const btn = document.getElementById('sofa-toggle-btn');
             const listContainer = document.getElementById('interior-objects-list');
-            listContainer.innerHTML = '';
 
-            if(interiorItems.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위 버튼을 눌러 추가하세요.</p>`;
-                return;
-            }
+            if (!isSofaActive) {
+                // [ON]: SOFA.glb 파일 로드 및 배치
+                const loader = new THREE.GLTFLoader();
+                loader.load('SOFA.glb', function (gltf) {
+                    sofaModel = gltf.scene;
 
-            interiorItems.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-2';
+                    // 방 바닥면에 정확히 착지하도록 위치 및 높이 계산
+                    updateSofaFloorPosition();
+
+                    intScene.add(sofaModel);
+                    isSofaActive = true;
+
+                    // UI 버튼 및 관리 리스트 갱신
+                    btn.innerText = '제거하기 (OFF)';
+                    btn.className = 'px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition shadow-sm';
+
+                    listContainer.innerHTML = `
+                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
+                            <span class="text-xs font-bold text-zinc-800">SOFA.glb (커스텀 소파)</span>
+                            <button onclick="toggleSofaAsset()" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
+                        </div>
+                    `;
+                }, undefined, function (error) {
+                    console.error('SOFA.glb 로드 실패:', error);
+                    alert('SOFA.glb 파일을 불러오는 데 실패했습니다. 파일명을 다시 확인해주세요.');
+                });
+            } else {
+                // [OFF]: 소파 제거
+                if (sofaModel) {
+                    intScene.remove(sofaModel);
+                }
+                isSofaActive = false;
+
+                // UI 버튼 및 관리 리스트 초기화
+                btn.innerText = '배치하기 (ON)';
+                btn.className = 'px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm';
                 
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-zinc-800">${item.name}</span>
-                        <button onclick="removeInteriorObject(${item.id})" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
-                    </div>
-                    <div class="flex items-center gap-1.5 pt-1">
-                        <span class="text-[10px] text-zinc-400">컬러:</span>
-                        <button onclick="changeItemColor(${item.id}, 0x3d2817)" class="w-5 h-5 rounded bg-[#3d2817] border border-zinc-300 hover:scale-110 transition"></button>
-                        <button onclick="changeItemColor(${item.id}, 0x888888)" class="w-5 h-5 rounded bg-[#888888] border border-zinc-300 hover:scale-110 transition"></button>
-                        <button onclick="changeItemColor(${item.id}, 0xd4a373)" class="w-5 h-5 rounded bg-[#d4a373] border border-zinc-300 hover:scale-110 transition"></button>
-                        <button onclick="changeItemColor(${item.id}, 0x205470)" class="w-5 h-5 rounded bg-[#205470] border border-zinc-300 hover:scale-110 transition"></button>
-                    </div>
-                `;
-                listContainer.appendChild(card);
-            });
+                listContainer.innerHTML = `<p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위 버튼을 눌러 추가하세요.</p>`;
+            }
+        }
+
+        // SOFA.glb 하단이 방 바닥에 딱 붙도록 위치를 잡아주는 함수
+        function updateSofaFloorPosition() {
+            if (!sofaModel || !glbRoomModel) return;
+
+            const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
+            const sofaBox = new THREE.Box3().setFromObject(sofaModel);
+
+            // 소파 초기 위치 중앙 및 적절한 위치 세팅
+            sofaModel.position.set(0, 0, 0);
+
+            // 방의 최하단 바닥(roomBox.min.y)에 소파의 최하단(`sofaBox.min.y`)을 일치시킴
+            sofaModel.position.y = roomBox.min.y - sofaBox.min.y;
         }
 
         function saveInteriorProject() {
-            alert('스케치업 셸 기반 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
+            alert('SOFA.glb 에셋이 포함된 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
             switchPage('exhibition');
         }
 
