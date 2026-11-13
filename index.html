@@ -163,7 +163,7 @@
 
         <!-- 5. INTERIOR PAGE -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
-            <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
+            <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm shrink-0">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
@@ -258,32 +258,9 @@
                         </div>
                     </div>
 
-                    <!-- 💡 선택된 가구 제어 패널 -->
-                    <div id="active-furniture-controls" class="hidden bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-3">
-                        <div class="flex items-center justify-between border-b border-zinc-200 pb-2">
-                            <span id="selected-furniture-name" class="text-xs font-bold text-amber-600">선택된 가구</span>
-                            <span class="text-[10px] text-zinc-400">그리드 이동 / 회전</span>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium">
-                            <span>위치 이동:</span>
-                            <div class="grid grid-cols-2 gap-1">
-                                <button onclick="moveSelectedFurniture('IN')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬆ 안쪽</button>
-                                <button onclick="moveSelectedFurniture('OUT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬇ 바깥쪽</button>
-                                <button onclick="moveSelectedFurniture('LEFT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬅ 왼쪽</button>
-                                <button onclick="moveSelectedFurniture('RIGHT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">➡ 오른쪽</button>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium pt-1">
-                            <span>Z축 고정 회전:</span>
-                            <button onclick="rotateSelectedFurniture()" class="px-3 py-1 bg-amber-500 text-zinc-950 font-bold rounded-lg shadow-sm hover:bg-amber-400 transition">
-                                🔄 90° 회전
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 💡 배치된 가구 목록 관리 -->
+                    <!-- 💡 배치된 가구 목록 관리 (선택 버튼 제거, 순수 목록만 남김) -->
                     <div class="space-y-3">
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 목록 (클릭하여 선택)</label>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 목록 (3D 클릭 선택 가능)</label>
                         <div id="interior-objects-list" class="space-y-2">
                             <p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위에서 추가하세요.</p>
                         </div>
@@ -296,11 +273,31 @@
                     </button>
                 </div>
             </aside>
-            <div class="flex-1 relative bg-zinc-950">
-                <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 침대 크기 2배 확대(1.6배), 소파 색감 유지 및 그림자 최적화 완료</span>
+
+            <!-- 캔버스 영역 및 가구 머리 위 플로팅 컨트롤러 오버레이 -->
+            <div class="flex-1 relative bg-zinc-950 overflow-hidden" id="interior-canvas-container">
+                <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400 pointer-events-none">
+                    <span>💡 가구를 직접 클릭하면 머리 위에 이동/회전 컨트롤러가 나타납니다.</span>
                 </div>
-                <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
+
+                <!-- 💡 가구를 따라다니는 플로팅 제어 패널 (동적 좌표 연동) -->
+                <div id="floating-gizmo-panel" class="absolute hidden z-30 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-2xl rounded-2xl p-3 w-48 transition-all duration-75 select-none -translate-x-1/2 -translate-y-full mt-[-15px]">
+                    <div class="flex items-center justify-between border-b border-zinc-100 pb-1.5 mb-2">
+                        <span id="floating-furniture-name" class="text-[11px] font-bold text-amber-600 truncate">선택된 가구</span>
+                        <button onclick="deselectFurniture()" class="text-[10px] text-zinc-400 hover:text-zinc-700 font-bold px-1">✕</button>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-1">
+                            <button onclick="moveSelectedFurniture('IN')" class="py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded text-[10px] font-bold transition">⬆ 안쪽</button>
+                            <button onclick="moveSelectedFurniture('OUT')" class="py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded text-[10px] font-bold transition">⬇ 바깥쪽</button>
+                            <button onclick="moveSelectedFurniture('LEFT')" class="py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded text-[10px] font-bold transition">⬅ 왼쪽</button>
+                            <button onclick="moveSelectedFurniture('RIGHT')" class="py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded text-[10px] font-bold transition">➡ 오른쪽</button>
+                        </div>
+                        <button onclick="rotateSelectedFurniture()" class="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded text-[10px] transition shadow-sm">
+                            🔄 90° 회전
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -662,7 +659,7 @@
             }
         }
 
-        // --- 3. Interior Page (멀티 가구, 침대 2배 확대 및 그림자 최적화 시스템) ---
+        // --- 3. Interior Page (가구 클릭 및 2D 플로팅 기즈모 시스템) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let placedFurnitureList = []; 
@@ -679,36 +676,53 @@
         };
         let intAmbientLight, intDirLight;
         let isIntNight = false;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
 
         function initInterior3D() {
             const container = document.getElementById('interior-canvas-container');
-            container.innerHTML = '';
+            const canvasWrapper = document.createElement('div');
+            canvasWrapper.id = 'three-canvas-wrapper';
+            canvasWrapper.className = 'w-full h-full cursor-grab active:cursor-grabbing';
+            
+            // 기존 캔버스 래퍼 내부의 기존 canvas들 제거 후 새로 삽입
+            const existingCanvas = container.querySelector('#three-canvas-wrapper');
+            if(existingCanvas) existingCanvas.remove();
+            container.appendChild(canvasWrapper);
+
             if (intAnimId) cancelAnimationFrame(intAnimId);
 
             intScene = new THREE.Scene();
             intScene.background = isIntNight ? new THREE.Color(0x18181b) : new THREE.Color(0xf4f4f5);
 
-            intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            intCamera = new THREE.PerspectiveCamera(45, canvasWrapper.clientWidth / canvasWrapper.clientHeight, 0.1, 1000);
             intCamera.position.set(6, 4, 8);
 
             intRenderer = new THREE.WebGLRenderer({ antialias: true });
-            intRenderer.setSize(container.clientWidth, container.clientHeight);
+            intRenderer.setSize(canvasWrapper.clientWidth, canvasWrapper.clientHeight);
             intRenderer.shadowMap.enabled = true;
             intRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
             intRenderer.toneMapping = THREE.ACESFilmicToneMapping;
             intRenderer.toneMappingExposure = 1.1;
-            container.appendChild(intRenderer.domElement);
+            canvasWrapper.appendChild(intRenderer.domElement);
 
             intAmbientLight = new THREE.AmbientLight(0xffffff, 1.2);
             intScene.add(intAmbientLight);
 
-            // 💡 그림자 크기/퍼짐을 부드럽고 자연스럽게 잡아주는 조명 세팅
             intDirLight = new THREE.DirectionalLight(0xffffff, 1.6);
-            intDirLight.position.set(-5, 10, -5);
+            intDirLight.position.set(-4, 7, -4);
             intDirLight.castShadow = true;
-            intDirLight.shadow.mapSize.width = 1024;  // 해상도를 살짝 낮춰 그림자가 과하게 무거워지는 것 방지
-            intDirLight.shadow.mapSize.height = 1024;
-            intDirLight.shadow.bias = -0.0005;        // 그림자 노이즈 제거 및 밀착감 조절
+            intDirLight.shadow.mapSize.width = 2048;  
+            intDirLight.shadow.mapSize.height = 2048;
+            
+            const d = 4.5;
+            intDirLight.shadow.camera.left = -d;
+            intDirLight.shadow.camera.right = d;
+            intDirLight.shadow.camera.top = d;
+            intDirLight.shadow.camera.bottom = -d;
+            intDirLight.shadow.camera.near = 0.5;
+            intDirLight.shadow.camera.far = 25;
+            intDirLight.shadow.bias = -0.0002;
             intScene.add(intDirLight);
 
             const loader = new THREE.GLTFLoader();
@@ -785,7 +799,55 @@
                 }
             );
 
-            let isDrag = false, prevMouse = {x:0, y:0};
+            // 💡 3D 캔버스 클릭 이벤트 (가구 선택 레이캐스팅)
+            let isDragging = false;
+            let startMouse = { x: 0, y: 0 };
+            
+            canvasWrapper.onmousedown = e => {
+                isDragging = false;
+                startMouse = { x: e.clientX, y: e.clientY };
+            };
+
+            canvasWrapper.onmousemove = e => {
+                if (Math.abs(e.clientX - startMouse.x) > 3 || Math.abs(e.clientY - startMouse.y) > 3) {
+                    isDragging = true;
+                }
+            };
+
+            canvasWrapper.onmouseup = e => {
+                if (!isDragging) {
+                    // 클릭 이벤트로 판정하여 가구 선택 수행
+                    const rect = canvasWrapper.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / canvasWrapper.clientWidth) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / canvasWrapper.clientHeight) * 2 + 1;
+
+                    raycaster.setFromCamera(mouse, intCamera);
+                    
+                    // 배치된 가구들의 모델만 추출
+                    const furnitureObjects = placedFurnitureList.map(item => item.model);
+                    const intersects = raycaster.intersectObjects(furnitureObjects, true);
+
+                    if (intersects.length > 0) {
+                        // 클릭된 부모 가구 찾기
+                        let hitObj = intersects[0].object;
+                        let matchedFurniture = null;
+                        while (hitObj) {
+                            matchedFurniture = placedFurnitureList.find(item => item.model === hitObj);
+                            if (matchedFurniture) break;
+                            hitObj = hitObj.parent;
+                        }
+                        if (matchedFurniture) {
+                            selectFurniture(matchedFurniture.id);
+                        }
+                    } else {
+                        // 빈 공간 클릭 시 해제하려면 주석 해제 (기존 선택 유지 원할 시 생략 가능)
+                        // deselectFurniture();
+                    }
+                }
+            };
+
+            // 카메라 회전 드래그 로직
+            let isCamDrag = false, prevMouse = {x:0, y:0};
             let theta = Math.PI/4, phi = Math.PI/4, radius = 8;
 
             function updateCam() {
@@ -796,21 +858,78 @@
             }
             updateCam();
 
-            container.onmousedown = e => { isDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; };
+            canvasWrapper.onmousedown = e => { isCamDrag = true; prevMouse = {x: e.clientX, y: e.clientY}; startMouse = {x: e.clientX, y: e.clientY}; isDragging = false; };
             window.onmousemove = e => {
-                if(!isDrag || currentActivePage !== 'interior') return;
+                if(Math.abs(e.clientX - startMouse.x) > 3 || Math.abs(e.clientY - startMouse.y) > 3) isDragging = true;
+                if(!isCamDrag || currentActivePage !== 'interior') return;
                 theta -= (e.clientX - prevMouse.x) * 0.008;
                 phi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, phi - (e.clientY - prevMouse.y) * 0.008));
                 updateCam();
                 prevMouse = {x: e.clientX, y: e.clientY};
             };
-            window.onmouseup = () => isDrag = false;
+            window.onmouseup = e => {
+                isCamDrag = false;
+                if (!isDragging) {
+                    const rect = canvasWrapper.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / canvasWrapper.clientWidth) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / canvasWrapper.clientHeight) * 2 + 1;
+
+                    raycaster.setFromCamera(mouse, intCamera);
+                    const furnitureObjects = placedFurnitureList.map(item => item.model);
+                    const intersects = raycaster.intersectObjects(furnitureObjects, true);
+
+                    if (intersects.length > 0) {
+                        let hitObj = intersects[0].object;
+                        let matchedFurniture = null;
+                        while (hitObj) {
+                            matchedFurniture = placedFurnitureList.find(item => item.model === hitObj);
+                            if (matchedFurniture) break;
+                            hitObj = hitObj.parent;
+                        }
+                        if (matchedFurniture) selectFurniture(matchedFurniture.id);
+                    }
+                }
+            };
 
             function animateInt() {
                 intAnimId = requestAnimationFrame(animateInt);
                 intRenderer.render(intScene, intCamera);
+
+                // 💡 선택된 가구가 있다면 매 프레임마다 3D 좌표를 2D 화면 좌표로 변환하여 플로팅 UI 위치 갱신
+                if (selectedFurniture) {
+                    updateFloatingGizmoPosition();
+                }
             }
             animateInt();
+        }
+
+        // 💡 3D 가구 위치를 2D 화면 오버레이 좌표로 변환하는 함수
+        function updateFloatingGizmoPosition() {
+            if (!selectedFurniture) return;
+            const gizmoPanel = document.getElementById('floating-gizmo-panel');
+            const container = document.getElementById('interior-canvas-container');
+            if(!container) return;
+
+            const worldPos = new THREE.Vector3();
+            selectedFurniture.model.getWorldPosition(worldPos);
+            
+            // 가구 상단으로 위치 보정 (Y축 위쪽으로 살짝 띄움)
+            const box = new THREE.Box3().setFromObject(selectedFurniture.model);
+            worldPos.y = box.max.y + 0.2;
+
+            worldPos.project(intCamera);
+
+            const x = (worldPos.x *  .5 + .5) * container.clientWidth;
+            const y = (worldPos.y * -.5 + .5) * container.clientHeight;
+
+            // 화면 밖으로 나가거나 카메라 뒤로 갔을 때 처리
+            if (worldPos.z > 1) {
+                gizmoPanel.classList.add('hidden');
+            } else {
+                gizmoPanel.classList.remove('hidden');
+                gizmoPanel.style.left = `${x}px`;
+                gizmoPanel.style.top = `${y}px`;
+            }
         }
 
         function disposeInteriorViewer() {
@@ -829,7 +948,7 @@
                 if(intAmbientLight) intAmbientLight.intensity = 0.5;
                 if(intDirLight) {
                     intDirLight.intensity = 1.2;
-                    intDirLight.position.set(4, 8, -5);
+                    intDirLight.position.set(4, 7, -4);
                 }
                 btn.innerText = '🌙 야간';
                 btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow-sm';
@@ -838,7 +957,7 @@
                 if(intAmbientLight) intAmbientLight.intensity = 1.2;
                 if(intDirLight) {
                     intDirLight.intensity = 1.6;
-                    intDirLight.position.set(-5, 10, -5);
+                    intDirLight.position.set(-4, 7, -4);
                 }
                 btn.innerText = '☀️ 주간';
                 btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm';
@@ -871,16 +990,15 @@
             });
         }
 
-        // --- 💡 가구별 맞춤 스케일 및 높이 보정 오프셋 설정 ---
         const furnitureScales = {
-            'BED.glb': 1.6,         // 💡 기존 0.8배에서 2배 커진 1.6배로 조정
-            'ROUNDTABLE.glb': 0.5,  // 원형 테이블 0.5배 유지
-            'SOFA2.glb': 2.0,       // 소파 2배 유지
+            'BED.glb': 1.6,         
+            'ROUNDTABLE.glb': 0.5,  
+            'SOFA2.glb': 2.0,       
             'SIDETABLE.glb': 1.0    
         };
 
         const furnitureOffsets = {
-            'ROUNDTABLE.glb': 0.12, // 원형 테이블 바닥 안착 오프셋
+            'ROUNDTABLE.glb': 0.12, 
             'SOFA2.glb': 0.0,       
             'BED.glb': 0.0,
             'SIDETABLE.glb': 0.0
@@ -890,8 +1008,6 @@
             const loader = new THREE.GLTFLoader();
             loader.load(fileName, function (gltf) {
                 const model = gltf.scene;
-
-                // 스케일 적용
                 const scaleVal = furnitureScales[fileName] || 1.0;
                 model.scale.set(scaleVal, scaleVal, scaleVal);
 
@@ -899,8 +1015,6 @@
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        
-                        // 💡 소파 등 에셋 고유의 원본 색감과 텍스처 디테일이 유지되도록 강제 덮어쓰기 방지
                         if (child.material) {
                             child.material.needsUpdate = true;
                         }
@@ -908,7 +1022,6 @@
                 });
 
                 const uniqueId = 'furn_' + Date.now();
-                
                 const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
                 const modelBox = new THREE.Box3().setFromObject(model);
                 
@@ -930,21 +1043,28 @@
 
             }, undefined, function (error) {
                 console.error(`${fileName} 로드 실패:`, error);
-                alert(`${fileName} 파일을 불러오는 데 실패했습니다. 파일명을 다시 확인해주세요.`);
+                alert(`${fileName} 파일을 불러오는 데 실패했습니다.`);
             });
         }
 
         function selectFurniture(id) {
             selectedFurniture = placedFurnitureList.find(item => item.id === id);
-            const controlPanel = document.getElementById('active-furniture-controls');
-            const nameLabel = document.getElementById('selected-furniture-name');
+            const gizmoPanel = document.getElementById('floating-gizmo-panel');
+            const nameLabel = document.getElementById('floating-furniture-name');
 
             if (selectedFurniture) {
-                controlPanel.classList.remove('hidden');
-                nameLabel.innerText = `선택됨: ${selectedFurniture.name}`;
+                nameLabel.innerText = selectedFurniture.name;
+                gizmoPanel.classList.remove('hidden');
+                updateFloatingGizmoPosition();
             } else {
-                controlPanel.classList.add('hidden');
+                gizmoPanel.classList.add('hidden');
             }
+            updateFurnitureListUI();
+        }
+
+        function deselectFurniture() {
+            selectedFurniture = null;
+            document.getElementById('floating-gizmo-panel').classList.add('hidden');
             updateFurnitureListUI();
         }
 
@@ -954,8 +1074,7 @@
             if (index !== -1) {
                 intScene.remove(placedFurnitureList[index].model);
                 if (selectedFurniture && selectedFurniture.id === id) {
-                    selectedFurniture = null;
-                    document.getElementById('active-furniture-controls').classList.add('hidden');
+                    deselectFurniture();
                 }
                 placedFurnitureList.splice(index, 1);
             }
@@ -1002,6 +1121,7 @@
 
             model.position.x = Math.max(roomBounds.minX, Math.min(roomBounds.maxX, model.position.x));
             model.position.z = Math.max(roomBounds.minZ, Math.min(roomBounds.maxZ, model.position.z));
+            updateFloatingGizmoPosition();
         }
 
         function rotateSelectedFurniture() {
