@@ -718,30 +718,28 @@
             intRenderer = new THREE.WebGLRenderer({ antialias: true });
             intRenderer.setSize(container.clientWidth, container.clientHeight);
             intRenderer.shadowMap.enabled = true;
-            // 💡 부드러운 그림자 효과 설정
             intRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
             intRenderer.toneMapping = THREE.ACESFilmicToneMapping;
             intRenderer.toneMappingExposure = 1.1;
             canvasWrapper.appendChild(intRenderer.domElement);
 
-            // 💡 채도가 은은한 주간 환경광
             intAmbientLight = new THREE.AmbientLight(0xfffaed, 0.9);
             intScene.add(intAmbientLight);
 
-            // 💡 창문 방향에서 실내 안쪽으로 내리쬐는 태양광(직사광선) 설정
-            intDirLight = new THREE.DirectionalLight(0xfff3d1, 2.2);
-            intDirLight.position.set(-7, 8, 2); // 창문이 위치한 방향(-x쪽)에서 사선으로 빛 투사
+            // 💡 창문이 있는 바깥(-X 방향)에서 실내 안쪽으로 햇빛이 강하게 관통하도록 태양광 위치 및 타겟 재조정
+            intDirLight = new THREE.DirectionalLight(0xfff3d1, 2.5);
+            intDirLight.position.set(-14, 10, 4); // 방 외부 멀리 배치하여 빛이 창문을 통해 안으로 쏟아지도록 설정
             intDirLight.castShadow = true;
             intDirLight.shadow.mapSize.width = 2048;  
             intDirLight.shadow.mapSize.height = 2048;
             
-            const d = 5;
+            const d = 6;
             intDirLight.shadow.camera.left = -d;
             intDirLight.shadow.camera.right = d;
             intDirLight.shadow.camera.top = d;
             intDirLight.shadow.camera.bottom = -d;
             intDirLight.shadow.camera.near = 0.5;
-            intDirLight.shadow.camera.far = 25;
+            intDirLight.shadow.camera.far = 30;
             intDirLight.shadow.bias = -0.0002;
             intScene.add(intDirLight);
 
@@ -779,10 +777,16 @@
                     
                     glbRoomModel.traverse((child) => {
                         if (child.isMesh) {
-                            child.castShadow = true;  // 💡 방 구조물도 그림자를 생성하도록 설정
-                            child.receiveShadow = true; // 💡 방 구조물에 햇빛 그림자가 맺히도록 설정
+                            child.castShadow = true;  
+                            child.receiveShadow = true; 
                             const nameUpper = child.name.toUpperCase();
                             
+                            // 💡 창문 유리(Glass)는 그림자를 가로막지 않도록 투명 그림자 투과 속성 부여
+                            if (nameUpper.includes('GLASS') || nameUpper.includes('WINDOWGLASS')) {
+                                child.castShadow = false;
+                                child.receiveShadow = false;
+                            }
+
                             if (!nameUpper.includes('GLASS') && !nameUpper.includes('WINDOW')) {
                                 child.material = new THREE.MeshStandardMaterial({
                                     color: 0xfafafa,
@@ -800,7 +804,7 @@
                             } else if (nameUpper.includes('WINDOWGLASS') || nameUpper.includes('GLASS')) {
                                 glbMeshParts.WINDOWGLASS.push(child);
                                 child.material.transparent = true;
-                                child.material.opacity = 0.35;
+                                child.material.opacity = 0.25;
                             } else if (nameUpper.includes('WINDOW')) {
                                 glbMeshParts.WINDOW.push(child);
                             }
@@ -935,7 +939,6 @@
             intScene = null;
         }
 
-        // 💡 주간 모드일 때 창문 햇빛(직사광선) 방향으로 조명 세팅 강화
         function setEnvironmentMode(mode) {
             const btnDay = document.getElementById('env-btn-day');
             const btnNight = document.getElementById('env-btn-night');
@@ -951,8 +954,8 @@
                 }
                 if (intDirLight) {
                     intDirLight.color.setHex(0xfff3d1);
-                    intDirLight.intensity = 2.2;
-                    intDirLight.position.set(-7, 8, 2); // 창문 방향 태양광
+                    intDirLight.intensity = 2.5;
+                    intDirLight.position.set(-14, 10, 4);
                 }
             } else {
                 btnDay.className = "px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5";
@@ -964,7 +967,7 @@
                     intAmbientLight.intensity = 0.5;
                 }
                 if (intDirLight) {
-                    intDirLight.color.setHex(0x38bdf8); // 야간 블루빛 간접조명
+                    intDirLight.color.setHex(0x38bdf8);
                     intDirLight.intensity = 1.2;
                     intDirLight.position.set(4, 7, -4);
                 }
