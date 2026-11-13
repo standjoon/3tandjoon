@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (SIDETABLE.glb 배치 및 90도 회전/그리드 이동 제어) -->
+        <!-- 5. INTERIOR PAGE (하이엔드 톤매핑 & 그림자 렌더링 적용) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -252,7 +252,7 @@
                                 </button>
                             </div>
 
-                            <!-- 💡 방 내부 그리드 이동 및 90도 회전 컨트롤 패널 (테이블 켜질 때 활성화) -->
+                            <!-- 방 내부 그리드 이동 및 90도 회전 컨트롤 패널 -->
                             <div id="table-controls-panel" class="hidden space-y-2 pt-2 border-t border-zinc-200">
                                 <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium">
                                     <span>방 내부 위치 이동 (그리드):</span>
@@ -289,7 +289,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 투명 바닥 그리드 내 가구 배치 시스템 활성화</span>
+                    <span>💡 하이엔드 톤매핑 & 소프트 그림자 렌더링 활성화</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -653,13 +653,13 @@
             }
         }
 
-        // --- 3. Interior Page (SIDETABLE.glb 제어 및 방 내부 그리드/90도 회전 로직) ---
+        // --- 3. Interior Page (하이엔드 톤매핑 및 그림자 적용) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let tableModel = null; 
         let isTableActive = false; 
-        let transparentGridHelper = null; // 💡 투명 그리드 헬퍼
-        let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, floorY: 0 }; // 💡 방 영역 바운딩 제한 값
+        let transparentGridHelper = null; 
+        let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, floorY: 0 }; 
         
         let glbMeshParts = {
             FLOOR: [],
@@ -682,18 +682,28 @@
             intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             intCamera.position.set(6, 4, 8);
 
+            // 💡 렌더러 생성 시 하이엔드 톤 매핑 및 그림자 맵 활성화
             intRenderer = new THREE.WebGLRenderer({ antialias: true });
             intRenderer.setSize(container.clientWidth, container.clientHeight);
+            intRenderer.shadowMap.enabled = true;
+            intRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            intRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+            intRenderer.toneMappingExposure = 1.1;
             container.appendChild(intRenderer.domElement);
 
             intAmbientLight = new THREE.AmbientLight(0xffffff, 1.2);
             intScene.add(intAmbientLight);
 
+            // 💡 그림자를 생성하는 메인 조명 설정
             intDirLight = new THREE.DirectionalLight(0xffffff, 1.8);
             intDirLight.position.set(5, 10, 5);
+            intDirLight.castShadow = true;
+            intDirLight.shadow.mapSize.width = 2048;
+            intDirLight.shadow.mapSize.height = 2048;
+            intDirLight.shadow.bias = -0.0001;
             intScene.add(intDirLight);
 
-            // 1. 방 뼈대 3D_ROOM.glb 로드 및 바운딩 박스(영역) 자동 산출
+            // 1. 방 뼈대 3D_ROOM.glb 로드 및 그림자 받기 설정
             const loader = new THREE.GLTFLoader();
             loader.load(
                 '3D_ROOM.glb',
@@ -706,7 +716,6 @@
                     
                     intScene.add(glbRoomModel);
 
-                    // 💡 방 내부 바닥 범위 자동 계산 (4000x4000 등 오버플로우 방지용 경계선 설정)
                     const updatedBox = new THREE.Box3().setFromObject(glbRoomModel);
                     roomBounds.minX = updatedBox.min.x + 0.3;
                     roomBounds.maxX = updatedBox.max.x - 0.3;
@@ -714,22 +723,22 @@
                     roomBounds.maxZ = updatedBox.max.z - 0.3;
                     roomBounds.floorY = updatedBox.min.y;
 
-                    // 💡 투명 배치 그리드 생성 (방 바닥 크기에 맞춤)
                     const sizeX = updatedBox.max.x - updatedBox.min.x;
                     const sizeZ = updatedBox.max.z - updatedBox.min.z;
                     const gridSize = Math.max(sizeX, sizeZ);
                     
                     transparentGridHelper = new THREE.GridHelper(gridSize, 10, 0x000000, 0x888888);
-                    transparentGridHelper.position.y = updatedBox.min.y + 0.002; // 바닥에 살짝 띄워 겹침 방지
+                    transparentGridHelper.position.y = updatedBox.min.y + 0.002; 
                     transparentGridHelper.material.transparent = true;
-                    transparentGridHelper.material.opacity = 0.15; // 투명 그리드 감성
-                    transparentGridHelper.visible = false; // 기본은 숨김, 테이블 켤 때 활성화
+                    transparentGridHelper.material.opacity = 0.15; 
+                    transparentGridHelper.visible = false; 
                     intScene.add(transparentGridHelper);
 
                     glbMeshParts = { FLOOR: [], MAINWALL: [], SUBWALL: [], WINDOW: [], WINDOWGLASS: [] };
                     
                     glbRoomModel.traverse((child) => {
                         if (child.isMesh) {
+                            child.receiveShadow = true; // 💡 방 전체가 그림자를 받도록 설정
                             const nameUpper = child.name.toUpperCase();
                             
                             if (!nameUpper.includes('GLASS') && !nameUpper.includes('WINDOW')) {
@@ -854,7 +863,7 @@
             });
         }
 
-        // --- 💡 SIDETABLE.glb 토글 및 제어 시스템 ---
+        // --- 💡 SIDETABLE.glb 토글 및 그림자 부여 시스템 ---
         function toggleTableAsset() {
             const btn = document.getElementById('table-toggle-btn');
             const listContainer = document.getElementById('interior-objects-list');
@@ -865,7 +874,14 @@
                 loader.load('SIDETABLE.glb', function (gltf) {
                     tableModel = gltf.scene;
 
-                    // 방 중앙 바닥에 배치 및 바운딩 정렬
+                    // 💡 테이블 에셋의 모든 메시에 그림자 생성(cast) 및 수신(receive) 세팅 부여
+                    tableModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+
                     updateTableFloorPosition();
 
                     intScene.add(tableModel);
@@ -903,36 +919,30 @@
             }
         }
 
-        // 바닥 밀착 및 초기 위치 설정
         function updateTableFloorPosition() {
             if (!tableModel || !glbRoomModel) return;
 
             const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
             const tableBox = new THREE.Box3().setFromObject(tableModel);
 
-            // 최초 로드시 방 중앙에 위치시키되 바닥면에 Y축 고정
             tableModel.position.set(0, roomBox.min.y - tableBox.min.y, 0);
         }
 
-        // 💡 1. 방 바닥 안에서만 그리드 단위로 이동하는 함수 (방 탈출 방지 제어 포함)
         function moveTablePosition(direction) {
             if (!tableModel) return;
-            const step = 0.3; // 이동 간격 (그리드 스텝)
+            const step = 0.3; 
 
             if (direction === 'IN') tableModel.position.z -= step;
             if (direction === 'OUT') tableModel.position.z += step;
             if (direction === 'LEFT') tableModel.position.x -= step;
             if (direction === 'RIGHT') tableModel.position.x += step;
 
-            // 방 경계(Boundaries)를 벗어나지 못하도록 강제 클램프(Clamp) 처리
             tableModel.position.x = Math.max(roomBounds.minX, Math.min(roomBounds.maxX, tableModel.position.x));
             tableModel.position.z = Math.max(roomBounds.minZ, Math.min(roomBounds.maxZ, tableModel.position.z));
         }
 
-        // 💡 2. Z축 고정 채로 90도씩 회전하는 함수
         function rotateTable90() {
             if (!tableModel) return;
-            // Y축 기준 90도(Math.PI / 2)씩 회전 누적
             tableModel.rotation.y += Math.PI / 2;
         }
 
