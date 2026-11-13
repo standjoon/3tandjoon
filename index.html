@@ -298,7 +298,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 가구 맞춤 스케일(침대 x2, 테이블 x0.5, 소파 x2) 적용 완료</span>
+                    <span>💡 침대 0.8배, 원형 테이블 바닥 안착, 그림자 180도 반전 적용 완료</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -662,7 +662,7 @@
             }
         }
 
-        // --- 3. Interior Page (멀티 가구, 스케일 및 높이 보정 시스템) ---
+        // --- 3. Interior Page (멀티 가구, 스케일 및 조명/그림자 방향 반전 시스템) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let placedFurnitureList = []; 
@@ -702,8 +702,9 @@
             intAmbientLight = new THREE.AmbientLight(0xffffff, 1.2);
             intScene.add(intAmbientLight);
 
+            // 💡 주간 조명(태양광): 기존 위치에서 180도 반대 방향으로 설정하여 그림자 방향 반전
             intDirLight = new THREE.DirectionalLight(0xffffff, 1.8);
-            intDirLight.position.set(5, 10, 5);
+            intDirLight.position.set(-5, 10, -5);
             intDirLight.castShadow = true;
             intDirLight.shadow.mapSize.width = 2048;
             intDirLight.shadow.mapSize.height = 2048;
@@ -828,7 +829,7 @@
                 if(intAmbientLight) intAmbientLight.intensity = 0.5;
                 if(intDirLight) {
                     intDirLight.intensity = 1.2;
-                    intDirLight.position.set(-4, 8, 5);
+                    intDirLight.position.set(4, 8, -5); // 야간 반대 방향 조명
                 }
                 btn.innerText = '🌙 야간';
                 btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 transition shadow-sm';
@@ -837,7 +838,7 @@
                 if(intAmbientLight) intAmbientLight.intensity = 1.2;
                 if(intDirLight) {
                     intDirLight.intensity = 1.8;
-                    intDirLight.position.set(5, 10, 5);
+                    intDirLight.position.set(-5, 10, -5); // 주간 반대 방향 조명
                 }
                 btn.innerText = '☀️ 주간';
                 btn.className = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm';
@@ -870,18 +871,18 @@
             });
         }
 
-        // --- 💡 가구별 맞춤 스케일(배율) 및 높이 보정 오프셋 설정 ---
+        // --- 💡 가구별 맞춤 스케일 및 높이 보정 오프셋 설정 ---
         const furnitureScales = {
-            'BED.glb': 2.0,         // 침대 2배 크기
-            'ROUNDTABLE.glb': 0.5,  // 원형 테이블 0.5배 크기
-            'SOFA2.glb': 2.0,       // 소파 2배 크기
-            'SIDETABLE.glb': 1.0    // 사이드 테이블 기본 크기
+            'BED.glb': 0.8,         // 💡 침대 0.8배 크기 요청 반영
+            'ROUNDTABLE.glb': 0.5,  // 원형 테이블 0.5배 유지
+            'SOFA2.glb': 2.0,       // 소파 2배 유지
+            'SIDETABLE.glb': 1.0    
         };
 
         const furnitureOffsets = {
-            'SOFA2.glb': 0.0,       // 소파 파묻힘 현상 보정값
+            'ROUNDTABLE.glb': 0.12, // 💡 원형 테이블이 바닥에 파묻히지 않도록 오프셋 상향 조정
+            'SOFA2.glb': 0.0,       
             'BED.glb': 0.0,
-            'ROUNDTABLE.glb': 0.0,
             'SIDETABLE.glb': 0.0
         };
 
@@ -890,7 +891,7 @@
             loader.load(fileName, function (gltf) {
                 const model = gltf.scene;
 
-                // 💡 요청하신 스케일 배율 적용
+                // 스케일 적용
                 const scaleVal = furnitureScales[fileName] || 1.0;
                 model.scale.set(scaleVal, scaleVal, scaleVal);
 
@@ -904,6 +905,8 @@
                 const uniqueId = 'furn_' + Date.now();
                 
                 const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
+                
+                // 스케일 변경 후 모델 바운딩박스 재계산
                 const modelBox = new THREE.Box3().setFromObject(model);
                 
                 const yOffset = furnitureOffsets[fileName] || 0.0;
