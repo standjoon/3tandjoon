@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (SOFA.glb 토글 연동) -->
+        <!-- 5. INTERIOR PAGE (side_table_01_2k.gltf 토글 연동) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -235,19 +235,19 @@
                         </div>
                     </div>
 
-                    <!-- 💡 SOFA.glb 껐다 켤 수 있는 토글형 가구 에셋 섹션 -->
+                    <!-- 💡 고품질 사이드 테이블 에셋 섹션 -->
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">커스텀 가구 에셋 (SOFA)</label>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">하이엔드 가구 에셋 (Side Table)</label>
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <span class="text-sm">🛋️</span>
+                                <span class="text-sm">🪑</span>
                                 <div>
-                                    <h4 class="text-xs font-bold text-zinc-900">SOFA.glb</h4>
-                                    <p class="text-[10px] text-zinc-400">커스텀 소파 모델</p>
+                                    <h4 class="text-xs font-bold text-zinc-900">Side Table</h4>
+                                    <p class="text-[10px] text-zinc-400">고품질 PBR 에셋</p>
                                 </div>
                             </div>
                             <!-- 켜고 끄는 토글 버튼 -->
-                            <button onclick="toggleSofaAsset()" id="sofa-toggle-btn" class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm">
+                            <button onclick="toggleTableAsset()" id="table-toggle-btn" class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm">
                                 배치하기 (ON)
                             </button>
                         </div>
@@ -269,7 +269,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 SOFA.glb 토글 연동 스튜디오 완료</span>
+                    <span>💡 하이엔드 3D 에셋 연동 완료</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -633,11 +633,11 @@
             }
         }
 
-        // --- 3. Interior Page (.glb 스케치업 셸 및 SOFA.glb 토글 연동) ---
+        // --- 3. Interior Page (side_table_01_2k.gltf 토글 연동) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
-        let sofaModel = null; // 💡 SOFA.glb 인스턴스 저장 변수
-        let isSofaActive = false; // 💡 소파 켜짐/꺼짐 상태 관리
+        let tableModel = null; // 💡 사이드 테이블 모델 인스턴스 저장 변수
+        let isTableActive = false; // 💡 테이블 켜짐/꺼짐 상태 관리
         
         let glbMeshParts = {
             FLOOR: [],
@@ -714,10 +714,10 @@
                         }
                     });
 
-                    // 만약 페이지 전환 전 소파가 켜져있었다면 재배치
-                    if (isSofaActive && sofaModel) {
-                        intScene.add(sofaModel);
-                        updateSofaFloorPosition();
+                    // 만약 페이지 전환 전 테이블이 켜져있었다면 재배치
+                    if (isTableActive && tableModel) {
+                        intScene.add(tableModel);
+                        updateTableFloorPosition();
                     }
                 },
                 undefined,
@@ -812,22 +812,22 @@
             });
         }
 
-        // --- 💡 SOFA.glb 껐다 켜기(Toggle) 제어 함수 ---
-        function toggleSofaAsset() {
-            const btn = document.getElementById('sofa-toggle-btn');
+        // --- 💡 side_table_01_2k.gltf 껐다 켜기(Toggle) 제어 함수 ---
+        function toggleTableAsset() {
+            const btn = document.getElementById('table-toggle-btn');
             const listContainer = document.getElementById('interior-objects-list');
 
-            if (!isSofaActive) {
-                // [ON]: SOFA.glb 파일 로드 및 배치
+            if (!isTableActive) {
+                // [ON]: side_table_01_2k.gltf 파일 로드 및 배치
                 const loader = new THREE.GLTFLoader();
-                loader.load('SOFA.glb', function (gltf) {
-                    sofaModel = gltf.scene;
+                loader.load('side_table_01_2k.gltf', function (gltf) {
+                    tableModel = gltf.scene;
 
                     // 방 바닥면에 정확히 착지하도록 위치 및 높이 계산
-                    updateSofaFloorPosition();
+                    updateTableFloorPosition();
 
-                    intScene.add(sofaModel);
-                    isSofaActive = true;
+                    intScene.add(tableModel);
+                    isTableActive = true;
 
                     // UI 버튼 및 관리 리스트 갱신
                     btn.innerText = '제거하기 (OFF)';
@@ -835,20 +835,20 @@
 
                     listContainer.innerHTML = `
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
-                            <span class="text-xs font-bold text-zinc-800">SOFA.glb (커스텀 소파)</span>
-                            <button onclick="toggleSofaAsset()" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
+                            <span class="text-xs font-bold text-zinc-800">Side Table (하이엔드 에셋)</span>
+                            <button onclick="toggleTableAsset()" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
                         </div>
                     `;
                 }, undefined, function (error) {
-                    console.error('SOFA.glb 로드 실패:', error);
-                    alert('SOFA.glb 파일을 불러오는 데 실패했습니다. 파일명을 다시 확인해주세요.');
+                    console.error('side_table_01_2k.gltf 로드 실패:', error);
+                    alert('사이드 테이블 파일을 불러오는 데 실패했습니다. 파일 경로 및 파일명을 다시 확인해주세요.');
                 });
             } else {
-                // [OFF]: 소파 제거
-                if (sofaModel) {
-                    intScene.remove(sofaModel);
+                // [OFF]: 테이블 제거
+                if (tableModel) {
+                    intScene.remove(tableModel);
                 }
-                isSofaActive = false;
+                isTableActive = false;
 
                 // UI 버튼 및 관리 리스트 초기화
                 btn.innerText = '배치하기 (ON)';
@@ -858,22 +858,22 @@
             }
         }
 
-        // SOFA.glb 하단이 방 바닥에 딱 붙도록 위치를 잡아주는 함수
-        function updateSofaFloorPosition() {
-            if (!sofaModel || !glbRoomModel) return;
+        // 사이드 테이블 하단이 방 바닥에 딱 붙도록 위치를 잡아주는 함수
+        function updateTableFloorPosition() {
+            if (!tableModel || !glbRoomModel) return;
 
             const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
-            const sofaBox = new THREE.Box3().setFromObject(sofaModel);
+            const tableBox = new THREE.Box3().setFromObject(tableModel);
 
-            // 소파 초기 위치 중앙 및 적절한 위치 세팅
-            sofaModel.position.set(0, 0, 0);
+            // 테이블 초기 위치 설정
+            tableModel.position.set(0, 0, 0);
 
-            // 방의 최하단 바닥(roomBox.min.y)에 소파의 최하단(`sofaBox.min.y`)을 일치시킴
-            sofaModel.position.y = roomBox.min.y - sofaBox.min.y;
+            // 방의 최하단 바닥(roomBox.min.y)에 테이블의 최하단(`tableBox.min.y`)을 일치시킴
+            tableModel.position.y = roomBox.min.y - tableBox.min.y;
         }
 
         function saveInteriorProject() {
-            alert('SOFA.glb 에셋이 포함된 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
+            alert('하이엔드 사이드 테이블 에셋이 포함된 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
             switchPage('exhibition');
         }
 
