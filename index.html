@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (side_table_01_2k.gltf 토글 연동) -->
+        <!-- 5. INTERIOR PAGE (SIDETABLE.glb 배치 및 90도 회전/그리드 이동 제어) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -235,21 +235,41 @@
                         </div>
                     </div>
 
-                    <!-- 💡 고품질 사이드 테이블 에셋 섹션 -->
+                    <!-- 💡 SIDETABLE.glb 에셋 제어 섹션 -->
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">하이엔드 가구 에셋 (Side Table)</label>
-                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm">🪑</span>
-                                <div>
-                                    <h4 class="text-xs font-bold text-zinc-900">Side Table</h4>
-                                    <p class="text-[10px] text-zinc-400">고품질 PBR 에셋</p>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">가구 에셋 제어 (SIDETABLE)</label>
+                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm">🪑</span>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-zinc-900">Side Table</h4>
+                                        <p class="text-[10px] text-zinc-400">하이엔드 3D 에셋</p>
+                                    </div>
+                                </div>
+                                <button onclick="toggleTableAsset()" id="table-toggle-btn" class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm">
+                                    배치하기 (ON)
+                                </button>
+                            </div>
+
+                            <!-- 💡 방 내부 그리드 이동 및 90도 회전 컨트롤 패널 (테이블 켜질 때 활성화) -->
+                            <div id="table-controls-panel" class="hidden space-y-2 pt-2 border-t border-zinc-200">
+                                <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium">
+                                    <span>방 내부 위치 이동 (그리드):</span>
+                                    <div class="grid grid-cols-2 gap-1">
+                                        <button onclick="moveTablePosition('IN')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬆ 안쪽</button>
+                                        <button onclick="moveTablePosition('OUT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬇ 바깥쪽</button>
+                                        <button onclick="moveTablePosition('LEFT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬅ 왼쪽</button>
+                                        <button onclick="moveTablePosition('RIGHT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">➡ 오른쪽</button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium pt-1">
+                                    <span>Z축 고정 90도 회전:</span>
+                                    <button onclick="rotateTable90()" class="px-3 py-1 bg-amber-500 text-zinc-950 font-bold rounded-lg shadow-sm hover:bg-amber-400 transition">
+                                        🔄 90° 회전
+                                    </button>
                                 </div>
                             </div>
-                            <!-- 켜고 끄는 토글 버튼 -->
-                            <button onclick="toggleTableAsset()" id="table-toggle-btn" class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm">
-                                배치하기 (ON)
-                            </button>
                         </div>
                     </div>
 
@@ -269,7 +289,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 하이엔드 3D 에셋 연동 완료</span>
+                    <span>💡 투명 바닥 그리드 내 가구 배치 시스템 활성화</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -633,11 +653,13 @@
             }
         }
 
-        // --- 3. Interior Page (side_table_01_2k.gltf 토글 연동) ---
+        // --- 3. Interior Page (SIDETABLE.glb 제어 및 방 내부 그리드/90도 회전 로직) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
-        let tableModel = null; // 💡 사이드 테이블 모델 인스턴스 저장 변수
-        let isTableActive = false; // 💡 테이블 켜짐/꺼짐 상태 관리
+        let tableModel = null; 
+        let isTableActive = false; 
+        let transparentGridHelper = null; // 💡 투명 그리드 헬퍼
+        let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, floorY: 0 }; // 💡 방 영역 바운딩 제한 값
         
         let glbMeshParts = {
             FLOOR: [],
@@ -671,7 +693,7 @@
             intDirLight.position.set(5, 10, 5);
             intScene.add(intDirLight);
 
-            // 1. 방 뼈대 3D_ROOM.glb 로드
+            // 1. 방 뼈대 3D_ROOM.glb 로드 및 바운딩 박스(영역) 자동 산출
             const loader = new THREE.GLTFLoader();
             loader.load(
                 '3D_ROOM.glb',
@@ -683,6 +705,26 @@
                     glbRoomModel.position.sub(center);
                     
                     intScene.add(glbRoomModel);
+
+                    // 💡 방 내부 바닥 범위 자동 계산 (4000x4000 등 오버플로우 방지용 경계선 설정)
+                    const updatedBox = new THREE.Box3().setFromObject(glbRoomModel);
+                    roomBounds.minX = updatedBox.min.x + 0.3;
+                    roomBounds.maxX = updatedBox.max.x - 0.3;
+                    roomBounds.minZ = updatedBox.min.z + 0.3;
+                    roomBounds.maxZ = updatedBox.max.z - 0.3;
+                    roomBounds.floorY = updatedBox.min.y;
+
+                    // 💡 투명 배치 그리드 생성 (방 바닥 크기에 맞춤)
+                    const sizeX = updatedBox.max.x - updatedBox.min.x;
+                    const sizeZ = updatedBox.max.z - updatedBox.min.z;
+                    const gridSize = Math.max(sizeX, sizeZ);
+                    
+                    transparentGridHelper = new THREE.GridHelper(gridSize, 10, 0x000000, 0x888888);
+                    transparentGridHelper.position.y = updatedBox.min.y + 0.002; // 바닥에 살짝 띄워 겹침 방지
+                    transparentGridHelper.material.transparent = true;
+                    transparentGridHelper.material.opacity = 0.15; // 투명 그리드 감성
+                    transparentGridHelper.visible = false; // 기본은 숨김, 테이블 켤 때 활성화
+                    intScene.add(transparentGridHelper);
 
                     glbMeshParts = { FLOOR: [], MAINWALL: [], SUBWALL: [], WINDOW: [], WINDOWGLASS: [] };
                     
@@ -714,15 +756,15 @@
                         }
                     });
 
-                    // 만약 페이지 전환 전 테이블이 켜져있었다면 재배치
                     if (isTableActive && tableModel) {
                         intScene.add(tableModel);
                         updateTableFloorPosition();
+                        if(transparentGridHelper) transparentGridHelper.visible = true;
                     }
                 },
                 undefined,
                 function (error) {
-                    console.error('An error happened while loading 3D_ROOM.glb:', error);
+                    console.error('3D_ROOM.glb 로드 에러:', error);
                 }
             );
 
@@ -812,45 +854,48 @@
             });
         }
 
-        // --- 💡 side_table_01_2k.gltf 껐다 켜기(Toggle) 제어 함수 ---
+        // --- 💡 SIDETABLE.glb 토글 및 제어 시스템 ---
         function toggleTableAsset() {
             const btn = document.getElementById('table-toggle-btn');
             const listContainer = document.getElementById('interior-objects-list');
+            const controlPanel = document.getElementById('table-controls-panel');
 
             if (!isTableActive) {
-                // [ON]: side_table_01_2k.gltf 파일 로드 및 배치
                 const loader = new THREE.GLTFLoader();
-                loader.load('side_table_01_2k.gltf', function (gltf) {
+                loader.load('SIDETABLE.glb', function (gltf) {
                     tableModel = gltf.scene;
 
-                    // 방 바닥면에 정확히 착지하도록 위치 및 높이 계산
+                    // 방 중앙 바닥에 배치 및 바운딩 정렬
                     updateTableFloorPosition();
 
                     intScene.add(tableModel);
                     isTableActive = true;
 
-                    // UI 버튼 및 관리 리스트 갱신
+                    if(transparentGridHelper) transparentGridHelper.visible = true;
+                    controlPanel.classList.remove('hidden');
+
                     btn.innerText = '제거하기 (OFF)';
                     btn.className = 'px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition shadow-sm';
 
                     listContainer.innerHTML = `
                         <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
-                            <span class="text-xs font-bold text-zinc-800">Side Table (하이엔드 에셋)</span>
+                            <span class="text-xs font-bold text-zinc-800">SIDETABLE (하이엔드 에셋)</span>
                             <button onclick="toggleTableAsset()" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
                         </div>
                     `;
                 }, undefined, function (error) {
-                    console.error('side_table_01_2k.gltf 로드 실패:', error);
-                    alert('사이드 테이블 파일을 불러오는 데 실패했습니다. 파일 경로 및 파일명을 다시 확인해주세요.');
+                    console.error('SIDETABLE.glb 로드 실패:', error);
+                    alert('SIDETABLE.glb 파일을 불러오는 데 실패했습니다. 파일명을 다시 확인해주세요.');
                 });
             } else {
-                // [OFF]: 테이블 제거
                 if (tableModel) {
                     intScene.remove(tableModel);
                 }
                 isTableActive = false;
 
-                // UI 버튼 및 관리 리스트 초기화
+                if(transparentGridHelper) transparentGridHelper.visible = false;
+                controlPanel.classList.add('hidden');
+
                 btn.innerText = '배치하기 (ON)';
                 btn.className = 'px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm';
                 
@@ -858,22 +903,41 @@
             }
         }
 
-        // 사이드 테이블 하단이 방 바닥에 딱 붙도록 위치를 잡아주는 함수
+        // 바닥 밀착 및 초기 위치 설정
         function updateTableFloorPosition() {
             if (!tableModel || !glbRoomModel) return;
 
             const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
             const tableBox = new THREE.Box3().setFromObject(tableModel);
 
-            // 테이블 초기 위치 설정
-            tableModel.position.set(0, 0, 0);
+            // 최초 로드시 방 중앙에 위치시키되 바닥면에 Y축 고정
+            tableModel.position.set(0, roomBox.min.y - tableBox.min.y, 0);
+        }
 
-            // 방의 최하단 바닥(roomBox.min.y)에 테이블의 최하단(`tableBox.min.y`)을 일치시킴
-            tableModel.position.y = roomBox.min.y - tableBox.min.y;
+        // 💡 1. 방 바닥 안에서만 그리드 단위로 이동하는 함수 (방 탈출 방지 제어 포함)
+        function moveTablePosition(direction) {
+            if (!tableModel) return;
+            const step = 0.3; // 이동 간격 (그리드 스텝)
+
+            if (direction === 'IN') tableModel.position.z -= step;
+            if (direction === 'OUT') tableModel.position.z += step;
+            if (direction === 'LEFT') tableModel.position.x -= step;
+            if (direction === 'RIGHT') tableModel.position.x += step;
+
+            // 방 경계(Boundaries)를 벗어나지 못하도록 강제 클램프(Clamp) 처리
+            tableModel.position.x = Math.max(roomBounds.minX, Math.min(roomBounds.maxX, tableModel.position.x));
+            tableModel.position.z = Math.max(roomBounds.minZ, Math.min(roomBounds.maxZ, tableModel.position.z));
+        }
+
+        // 💡 2. Z축 고정 채로 90도씩 회전하는 함수
+        function rotateTable90() {
+            if (!tableModel) return;
+            // Y축 기준 90도(Math.PI / 2)씩 회전 누적
+            tableModel.rotation.y += Math.PI / 2;
         }
 
         function saveInteriorProject() {
-            alert('하이엔드 사이드 테이블 에셋이 포함된 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
+            alert('SIDETABLE 에셋이 포함된 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
             switchPage('exhibition');
         }
 
