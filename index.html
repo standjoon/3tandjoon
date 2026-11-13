@@ -280,17 +280,55 @@
             <!-- 캔버스 영역 및 가구 머리 위 플로팅 컨트롤러 오버레이 -->
             <div class="flex-1 relative bg-zinc-950 overflow-hidden" id="interior-canvas-container">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400 pointer-events-none">
-                    <span>💡 가구를 클릭하면 머리 위에 컨트롤러가 뜹니다. 빈 공간을 누르면 닫힙니다.</span>
+                    <span>💡 가구를 클릭하면 머리 위에 컨트롤러가 뜹니다. 우측 하단에서 햇빛 각도/위치를 조절하세요.</span>
                 </div>
 
-                <!-- 💡 3D 캔버스 우측 하단 주간/야간 탭 컨트롤러 -->
-                <div class="absolute bottom-6 right-6 z-20 bg-zinc-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-zinc-800 shadow-2xl flex items-center gap-1.5">
-                    <button onclick="setEnvironmentMode('day')" id="env-btn-day" class="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center gap-1.5">
-                        <span>☀️</span> 주간
+                <!-- 💡 우측 하단 채광 제어 컨트롤러 (태양광 속성 슬라이더 패널 + ON/OFF 토글 + 주간/야간 모드) -->
+                <div class="absolute bottom-6 right-6 z-20 bg-zinc-900/90 backdrop-blur-md p-4 rounded-2xl border border-zinc-800 shadow-2xl flex flex-col gap-3 w-64 text-zinc-200 select-none">
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                        <span class="text-xs font-bold text-amber-400">☀️ 햇빛 & 조명 컨트롤러</span>
+                        <span id="sun-status-badge" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">ON</span>
+                    </div>
+
+                    <!-- 태양광 속성 조절 슬라이더들 -->
+                    <div class="space-y-2 text-[11px]">
+                        <div>
+                            <div class="flex justify-between text-zinc-400 mb-1">
+                                <span>방위각 (수평 회전 360°)</span>
+                                <span id="val-azimuth">140°</span>
+                            </div>
+                            <input type="range" id="sun-azimuth" min="0" max="360" value="140" oninput="updateSunLightTransform()" class="w-full accent-amber-500 cursor-pointer">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-zinc-400 mb-1">
+                                <span>고도 (높이)</span>
+                                <span id="val-altitude">10</span>
+                            </div>
+                            <input type="range" id="sun-altitude" min="2" max="25" step="0.5" value="10" oninput="updateSunLightTransform()" class="w-full accent-amber-500 cursor-pointer">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-zinc-400 mb-1">
+                                <span>거리 (광원 범위)</span>
+                                <span id="val-distance">18</span>
+                            </div>
+                            <input type="range" id="sun-distance" min="5" max="30" step="1" value="18" oninput="updateSunLightTransform()" class="w-full accent-amber-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- 조명 Visible 토글 버튼 (주간/야간 버튼보다 위에 배치) -->
+                    <button onclick="toggleSunLightVisibility()" id="sun-toggle-btn" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold rounded-xl text-xs transition border border-zinc-700 shadow flex items-center justify-center gap-1.5">
+                        <span>💡</span> 햇빛 조명 끄기 (Visible OFF)
                     </button>
-                    <button onclick="setEnvironmentMode('night')" id="env-btn-night" class="px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5">
-                        <span>🌙</span> 야간
-                    </button>
+
+                    <!-- 주간 / 야간 모드 전환 버튼 -->
+                    <div class="flex items-center gap-1.5 pt-1 border-t border-zinc-800">
+                        <button onclick="setEnvironmentMode('day')" id="env-btn-day" class="flex-1 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center justify-center gap-1">
+                            <span>☀️</span> 주간
+                        </button>
+                        <button onclick="setEnvironmentMode('night')" id="env-btn-night" class="flex-1 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center justify-center gap-1">
+                            <span>🌙</span> 야간
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 💡 팝업 플로팅 제어 패널 -->
@@ -726,9 +764,9 @@
             intAmbientLight = new THREE.AmbientLight(0xfffaed, 0.9);
             intScene.add(intAmbientLight);
 
-            // 💡 창문이 있는 바깥(-X 방향)에서 실내 안쪽으로 햇빛이 강하게 관통하도록 태양광 위치 및 타겟 재조정
+            // 💡 태양광 초기 생성 및 설정 (방 외부에서 창문을 통해 들어오도록 위치 설정)
             intDirLight = new THREE.DirectionalLight(0xfff3d1, 2.5);
-            intDirLight.position.set(-14, 10, 4); // 방 외부 멀리 배치하여 빛이 창문을 통해 안으로 쏟아지도록 설정
+            intDirLight.position.set(-12, 10, 5);
             intDirLight.castShadow = true;
             intDirLight.shadow.mapSize.width = 2048;  
             intDirLight.shadow.mapSize.height = 2048;
@@ -739,9 +777,12 @@
             intDirLight.shadow.camera.top = d;
             intDirLight.shadow.camera.bottom = -d;
             intDirLight.shadow.camera.near = 0.5;
-            intDirLight.shadow.camera.far = 30;
+            intDirLight.shadow.camera.far = 35;
             intDirLight.shadow.bias = -0.0002;
             intScene.add(intDirLight);
+
+            // 초기 슬라이더 UI 값 반영
+            updateSunLightTransform();
 
             const loader = new THREE.GLTFLoader();
             loader.load(
@@ -781,7 +822,7 @@
                             child.receiveShadow = true; 
                             const nameUpper = child.name.toUpperCase();
                             
-                            // 💡 창문 유리(Glass)는 그림자를 가로막지 않도록 투명 그림자 투과 속성 부여
+                            // 💡 창문 유리는 그림자를 막지 않도록 설정하여 채광이 실내로 쏟아지도록 보정
                             if (nameUpper.includes('GLASS') || nameUpper.includes('WINDOWGLASS')) {
                                 child.castShadow = false;
                                 child.receiveShadow = false;
@@ -905,6 +946,54 @@
             animateInt();
         }
 
+        // 💡 360도 방위각, 고도, 거리를 기반으로 태양광 포지션 실시간 계산 및 업데이트
+        function updateSunLightTransform() {
+            const azimuthDeg = parseFloat(document.getElementById('sun-azimuth').value);
+            const altitude = parseFloat(document.getElementById('sun-altitude').value);
+            const distance = parseFloat(document.getElementById('sun-distance').value);
+
+            document.getElementById('val-azimuth').innerText = azimuthDeg + '°';
+            document.getElementById('val-altitude').innerText = altitude;
+            document.getElementById('val-distance').innerText = distance;
+
+            if (intDirLight) {
+                const rad = azimuthDeg * (Math.PI / 180);
+                // 방위각과 고도를 3D 좌표로 변환
+                const x = Math.sin(rad) * distance;
+                const z = Math.cos(rad) * distance;
+                const y = altitude;
+
+                intDirLight.position.set(x, y, z);
+                // 빛이 항상 방의 중심(0,0,0)을 향하도록 타겟 설정
+                intDirLight.target.position.set(0, 0, 0);
+                intDirLight.target.updateMatrixWorld();
+            }
+        }
+
+        // 💡 햇빛 조명 Visible 토글 기능
+        let isSunLightVisible = true;
+        function toggleSunLightVisibility() {
+            isSunLightVisible = !isSunLightVisible;
+            const btn = document.getElementById('sun-toggle-btn');
+            const badge = document.getElementById('sun-status-badge');
+
+            if (intDirLight) {
+                intDirLight.visible = isSunLightVisible;
+            }
+
+            if (isSunLightVisible) {
+                btn.innerHTML = `<span>💡</span> 햇빛 조명 끄기 (Visible OFF)`;
+                btn.className = "w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold rounded-xl text-xs transition border border-zinc-700 shadow flex items-center justify-center gap-1.5";
+                badge.innerText = "ON";
+                badge.className = "text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold";
+            } else {
+                btn.innerHTML = `<span>💡</span> 햇빛 조명 켜기 (Visible ON)`;
+                btn.className = "w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold rounded-xl text-xs transition border border-amber-500/30 shadow flex items-center justify-center gap-1.5";
+                badge.innerText = "OFF";
+                badge.className = "text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-500 font-semibold";
+            }
+        }
+
         function updateFloatingGizmoPosition() {
             if (!selectedFurniture) return;
             const gizmoPanel = document.getElementById('floating-gizmo-panel');
@@ -944,8 +1033,8 @@
             const btnNight = document.getElementById('env-btn-night');
 
             if (mode === 'day') {
-                btnDay.className = "px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center gap-1.5";
-                btnNight.className = "px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5";
+                btnDay.className = "flex-1 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center justify-center gap-1";
+                btnNight.className = "flex-1 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center justify-center gap-1";
 
                 if (intScene) intScene.background = new THREE.Color(0xf4f4f5);
                 if (intAmbientLight) {
@@ -955,11 +1044,15 @@
                 if (intDirLight) {
                     intDirLight.color.setHex(0xfff3d1);
                     intDirLight.intensity = 2.5;
-                    intDirLight.position.set(-14, 10, 4);
+                    // 슬라이더 기본값으로 복원
+                    document.getElementById('sun-azimuth').value = 140;
+                    document.getElementById('sun-altitude').value = 10;
+                    document.getElementById('sun-distance').value = 18;
+                    updateSunLightTransform();
                 }
             } else {
-                btnDay.className = "px-4 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center gap-1.5";
-                btnNight.className = "px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center gap-1.5";
+                btnDay.className = "flex-1 py-2 text-xs font-bold rounded-xl text-zinc-400 hover:text-white transition flex items-center justify-center gap-1";
+                btnNight.className = "flex-1 py-2 text-xs font-bold rounded-xl bg-amber-500 text-zinc-950 shadow transition flex items-center justify-center gap-1";
 
                 if (intScene) intScene.background = new THREE.Color(0x18181b);
                 if (intAmbientLight) {
