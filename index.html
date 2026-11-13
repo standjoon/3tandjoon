@@ -761,10 +761,11 @@
             intRenderer.toneMappingExposure = 1.1;
             canvasWrapper.appendChild(intRenderer.domElement);
 
-            intAmbientLight = new THREE.AmbientLight(0xfffaed, 0.9);
+            // 💡 환경광(AmbientLight)은 항상 켜져서 실내 전체를 밝게 유지
+            intAmbientLight = new THREE.AmbientLight(0xfffaed, 1.1);
             intScene.add(intAmbientLight);
 
-            // 💡 태양광 초기 생성 및 설정 (방 외부에서 창문을 통해 들어오도록 위치 설정)
+            // 💡 태양광(DirectionalLight) 생성 및 설정
             intDirLight = new THREE.DirectionalLight(0xfff3d1, 2.5);
             intDirLight.position.set(-12, 10, 5);
             intDirLight.castShadow = true;
@@ -781,7 +782,6 @@
             intDirLight.shadow.bias = -0.0002;
             intScene.add(intDirLight);
 
-            // 초기 슬라이더 UI 값 반영
             updateSunLightTransform();
 
             const loader = new THREE.GLTFLoader();
@@ -822,7 +822,6 @@
                             child.receiveShadow = true; 
                             const nameUpper = child.name.toUpperCase();
                             
-                            // 💡 창문 유리는 그림자를 막지 않도록 설정하여 채광이 실내로 쏟아지도록 보정
                             if (nameUpper.includes('GLASS') || nameUpper.includes('WINDOWGLASS')) {
                                 child.castShadow = false;
                                 child.receiveShadow = false;
@@ -946,7 +945,6 @@
             animateInt();
         }
 
-        // 💡 360도 방위각, 고도, 거리를 기반으로 태양광 포지션 실시간 계산 및 업데이트
         function updateSunLightTransform() {
             const azimuthDeg = parseFloat(document.getElementById('sun-azimuth').value);
             const altitude = parseFloat(document.getElementById('sun-altitude').value);
@@ -958,19 +956,17 @@
 
             if (intDirLight) {
                 const rad = azimuthDeg * (Math.PI / 180);
-                // 방위각과 고도를 3D 좌표로 변환
                 const x = Math.sin(rad) * distance;
                 const z = Math.cos(rad) * distance;
                 const y = altitude;
 
                 intDirLight.position.set(x, y, z);
-                // 빛이 항상 방의 중심(0,0,0)을 향하도록 타겟 설정
                 intDirLight.target.position.set(0, 0, 0);
                 intDirLight.target.updateMatrixWorld();
             }
         }
 
-        // 💡 햇빛 조명 Visible 토글 기능
+        // 💡 DirectionalLight(태양광)만 끄고 켜며, AmbientLight(환경광)는 항상 켜져서 어두워지지 않도록 유지
         let isSunLightVisible = true;
         function toggleSunLightVisibility() {
             isSunLightVisible = !isSunLightVisible;
@@ -1039,12 +1035,11 @@
                 if (intScene) intScene.background = new THREE.Color(0xf4f4f5);
                 if (intAmbientLight) {
                     intAmbientLight.color.setHex(0xfffaed);
-                    intAmbientLight.intensity = 0.9;
+                    intAmbientLight.intensity = 1.1; // 주간 환경광 밝기 보정
                 }
                 if (intDirLight) {
                     intDirLight.color.setHex(0xfff3d1);
                     intDirLight.intensity = 2.5;
-                    // 슬라이더 기본값으로 복원
                     document.getElementById('sun-azimuth').value = 140;
                     document.getElementById('sun-altitude').value = 10;
                     document.getElementById('sun-distance').value = 18;
@@ -1057,7 +1052,7 @@
                 if (intScene) intScene.background = new THREE.Color(0x18181b);
                 if (intAmbientLight) {
                     intAmbientLight.color.setHex(0xffffff);
-                    intAmbientLight.intensity = 0.5;
+                    intAmbientLight.intensity = 0.6;
                 }
                 if (intDirLight) {
                     intDirLight.color.setHex(0x38bdf8);
