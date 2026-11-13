@@ -161,7 +161,7 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (다중 가구 에셋 멀티 배치 시스템) -->
+        <!-- 5. INTERIOR PAGE -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -235,7 +235,7 @@
                         </div>
                     </div>
 
-                    <!-- 💡 가구 라이브러리 추가 섹션 (4개 가구) -->
+                    <!-- 💡 가구 라이브러리 추가 섹션 -->
                     <div>
                         <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">가구 에셋 라이브러리</label>
                         <div class="grid grid-cols-2 gap-2">
@@ -258,7 +258,7 @@
                         </div>
                     </div>
 
-                    <!-- 💡 선택된 가구 제어 패널 (이동 및 90도 회전) -->
+                    <!-- 💡 선택된 가구 제어 패널 -->
                     <div id="active-furniture-controls" class="hidden bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-3">
                         <div class="flex items-center justify-between border-b border-zinc-200 pb-2">
                             <span id="selected-furniture-name" class="text-xs font-bold text-amber-600">선택된 가구</span>
@@ -298,7 +298,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 멀티 가구 배치 & 투명 그리드 시스템 활성화</span>
+                    <span>💡 멀티 가구 높이 보정 시스템 활성화</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -662,7 +662,7 @@
             }
         }
 
-        // --- 3. Interior Page (다중 가구 관리 및 멀티 배치 시스템) ---
+        // --- 3. Interior Page (멀티 가구 및 높이 보정 시스템) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let placedFurnitureList = []; 
@@ -870,6 +870,14 @@
             });
         }
 
+        // --- 💡 가구별 오프셋(높이 보정) 설정 ---
+        const furnitureOffsets = {
+            'SOFA2.glb': 0.15,     // 💡 소파가 땅에 파묻힐 때 위로 띄워주는 값 (필요시 조절 가능)
+            'BED.glb': 0.0,
+            'ROUNDTABLE.glb': 0.0,
+            'SIDETABLE.glb': 0.0
+        };
+
         function addFurnitureAsset(fileName, displayName) {
             const loader = new THREE.GLTFLoader();
             loader.load(fileName, function (gltf) {
@@ -886,7 +894,10 @@
                 
                 const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
                 const modelBox = new THREE.Box3().setFromObject(model);
-                model.position.set(0, roomBox.min.y - modelBox.min.y, 0);
+                
+                // 💡 기본 바닥 착지에 파일별 오프셋(높이 보정)을 더해줌
+                const yOffset = furnitureOffsets[fileName] || 0.0;
+                model.position.set(0, (roomBox.min.y - modelBox.min.y) + yOffset, 0);
 
                 intScene.add(model);
                 if(transparentGridHelper) transparentGridHelper.visible = true;
@@ -983,7 +994,7 @@
         }
 
         function saveInteriorProject() {
-            alert('인테리어 디자인이 성공적으로 저장되었습니다!'); // 💡 문법 에러 수정 완료
+            alert('인테리어 디자인이 성공적으로 저장되었습니다!');
             switchPage('exhibition');
         }
 
