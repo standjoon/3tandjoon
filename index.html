@@ -13,7 +13,6 @@
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { font-family: 'Pretendard', sans-serif; }
         
-        /* 💡 가구 위에서 뿅 하고 나타나는 팝업 스케일 애니메이션 */
         @keyframes popUp {
             0% { opacity: 0; transform: translate(-50%, -100%) scale(0.85); }
             100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
@@ -281,7 +280,7 @@
             <!-- 캔버스 영역 및 가구 머리 위 플로팅 컨트롤러 오버레이 -->
             <div class="flex-1 relative bg-zinc-950 overflow-hidden" id="interior-canvas-container">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400 pointer-events-none">
-                    <span>💡 가구를 직접 클릭하면 머리 위에 이동/회전 컨트롤러가 나타납니다.</span>
+                    <span>💡 가구를 클릭하면 머리 위에 컨트롤러가 뜹니다. 빈 공간을 누르면 닫힙니다.</span>
                 </div>
 
                 <!-- 💡 3D 캔버스 우측 하단 주간/야간 탭 컨트롤러 -->
@@ -294,7 +293,7 @@
                     </button>
                 </div>
 
-                <!-- 💡 가구 머리 위에 바로 뿅 하고 나타나는 팝업 플로팅 제어 패널 -->
+                <!-- 💡 팝업 플로팅 제어 패널 (삭제 버튼 추가) -->
                 <div id="floating-gizmo-panel" class="absolute hidden z-30 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-2xl rounded-2xl p-3 w-48 select-none -translate-x-1/2 -translate-y-full mt-[-15px] animate-pop-up">
                     <div class="flex items-center justify-between border-b border-zinc-100 pb-1.5 mb-2">
                         <span id="floating-furniture-name" class="text-[11px] font-bold text-amber-600 truncate">선택된 가구</span>
@@ -309,6 +308,10 @@
                         </div>
                         <button onclick="rotateSelectedFurniture()" class="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded text-[10px] transition shadow-sm">
                             🔄 90° 회전
+                        </button>
+                        <!-- 💡 팝업 내에서 바로 가구를 삭제할 수 있는 버튼 추가 -->
+                        <button onclick="deleteSelectedFurnitureFromPopup()" class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded text-[10px] transition border border-red-200 shadow-sm">
+                            🗑️ 현재 가구 삭제
                         </button>
                     </div>
                 </div>
@@ -864,7 +867,12 @@
                             if (matchedFurniture) break;
                             hitObj = hitObj.parent;
                         }
-                        if (matchedFurniture) selectFurniture(matchedFurniture.id);
+                        if (matchedFurniture) {
+                            selectFurniture(matchedFurniture.id);
+                        }
+                    } else {
+                        // 💡 가구가 아닌 빈 공간을 클릭했을 때 팝업 창 닫기
+                        deselectFurniture();
                     }
                 }
             };
@@ -986,7 +994,7 @@
         };
 
         const furnitureOffsets = {
-            'ROUNDTABLE.glb': 0.35,  
+            'ROUNDTABLE.glb': 0.0,  
             'SOFA2.glb': 0.0,       
             'BED.glb': 0.0,
             'SIDETABLE.glb': 0.0
@@ -1061,6 +1069,27 @@
         function deselectFurniture() {
             selectedFurniture = null;
             document.getElementById('floating-gizmo-panel').classList.add('hidden');
+            updateFurnitureListUI();
+        }
+
+        // 💡 팝업창 내부의 '현재 가구 삭제' 버튼에서 호출되는 함수
+        function deleteSelectedFurnitureFromPopup() {
+            if (!selectedFurniture) return;
+            const targetId = selectedFurniture.id;
+            
+            const index = placedFurnitureList.findIndex(item => item.id === targetId);
+            if (index !== -1) {
+                if (intScene) {
+                    intScene.remove(placedFurnitureList[index].model);
+                }
+                placedFurnitureList.splice(index, 1);
+            }
+            
+            deselectFurniture();
+            
+            if (placedFurnitureList.length === 0 && transparentGridHelper) {
+                transparentGridHelper.visible = false;
+            }
             updateFurnitureListUI();
         }
 
