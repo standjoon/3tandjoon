@@ -12,6 +12,15 @@
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { font-family: 'Pretendard', sans-serif; }
+        
+        /* 💡 가구 위에서 뿅 하고 나타나는 팝업 스케일 애니메이션 */
+        @keyframes popUp {
+            0% { opacity: 0; transform: translate(-50%, -100%) scale(0.85); }
+            100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+        }
+        .animate-pop-up {
+            animation: popUp 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body class="bg-white text-zinc-900 h-screen flex flex-col overflow-hidden">
@@ -285,8 +294,8 @@
                     </button>
                 </div>
 
-                <!-- 💡 가구를 따라다니는 플로팅 제어 패널 -->
-                <div id="floating-gizmo-panel" class="absolute hidden z-30 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-2xl rounded-2xl p-3 w-48 transition-all duration-75 select-none -translate-x-1/2 -translate-y-full mt-[-15px]">
+                <!-- 💡 가구 머리 위에 바로 뿅 하고 나타나는 팝업 플로팅 제어 패널 -->
+                <div id="floating-gizmo-panel" class="absolute hidden z-30 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-2xl rounded-2xl p-3 w-48 select-none -translate-x-1/2 -translate-y-full mt-[-15px] animate-pop-up">
                     <div class="flex items-center justify-between border-b border-zinc-100 pb-1.5 mb-2">
                         <span id="floating-furniture-name" class="text-[11px] font-bold text-amber-600 truncate">선택된 가구</span>
                         <button onclick="deselectFurniture()" class="text-[10px] text-zinc-400 hover:text-zinc-700 font-bold px-1">✕</button>
@@ -664,7 +673,7 @@
             }
         }
 
-        // --- 3. Interior Page (정확한 바닥 밀착 좌표 보정 시스템) ---
+        // --- 3. Interior Page ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
         let placedFurnitureList = []; 
@@ -977,13 +986,12 @@
         };
 
         const furnitureOffsets = {
-            'ROUNDTABLE.glb': 0.0, 
+            'ROUNDTABLE.glb': 0.35,  
             'SOFA2.glb': 0.0,       
             'BED.glb': 0.0,
             'SIDETABLE.glb': 0.0
         };
 
-        // --- 💡 바닥 밀착 좌표 정밀 보정 및 회전 초기화 로직 ---
         function addFurnitureAsset(fileName, displayName) {
             const loader = new THREE.GLTFLoader();
             loader.load(fileName, function (gltf) {
@@ -991,7 +999,6 @@
                 const scaleVal = furnitureScales[fileName] || 1.0;
                 model.scale.set(scaleVal, scaleVal, scaleVal);
 
-                // 회전값 초기화 (기울어짐 방지)
                 model.rotation.set(0, 0, 0);
 
                 model.traverse((child) => {
@@ -1006,7 +1013,6 @@
 
                 const uniqueId = 'furn_' + Date.now();
                 
-                // 1단계: 모델을 잠시 씬에 더해 정확한 바운딩 박스를 계산
                 intScene.add(model);
                 model.position.set(0, 0, 0);
                 model.updateMatrixWorld(true);
@@ -1014,9 +1020,9 @@
                 const modelBox = new THREE.Box3().setFromObject(model);
                 const floorY = glbRoomModel ? new THREE.Box3().setFromObject(glbRoomModel).min.y : 0;
                 
-                // 2단계: 가구의 최하단(min.y)과 방 바닥(floorY)의 차이를 계산하여 정확히 바닥에 안착시킴
                 const yDelta = modelBox.min.y - floorY;
                 const manualOffset = furnitureOffsets[fileName] || 0.0;
+                
                 model.position.y = -yDelta + manualOffset;
 
                 if(transparentGridHelper) transparentGridHelper.visible = true;
