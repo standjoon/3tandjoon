@@ -161,13 +161,13 @@
             </div>
         </section>
 
-        <!-- 5. INTERIOR PAGE (하이엔드 톤매핑 & 그림자 렌더링 적용) -->
+        <!-- 5. INTERIOR PAGE (다중 가구 에셋 멀티 배치 시스템) -->
         <section id="page-interior" class="page absolute inset-0 hidden flex z-20 bg-zinc-50">
             <aside class="w-80 bg-white border-r border-zinc-200 flex flex-col z-10 shadow-sm">
                 <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-zinc-900">Interior Customizer</h2>
-                        <p class="text-xs text-zinc-500 mt-1">스케치업 3D 셸 기반 스튜디오</p>
+                        <p class="text-xs text-zinc-500 mt-1">다중 가구 배치 스튜디오</p>
                     </div>
                     <button onclick="toggleInteriorEnv()" id="int-env-btn" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition shadow-sm">
                         ☀️ 주간
@@ -235,48 +235,57 @@
                         </div>
                     </div>
 
-                    <!-- 💡 SIDETABLE.glb 에셋 제어 섹션 -->
+                    <!-- 💡 가구 라이브러리 추가 섹션 (4개 가구) -->
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">가구 에셋 제어 (SIDETABLE)</label>
-                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm">🪑</span>
-                                    <div>
-                                        <h4 class="text-xs font-bold text-zinc-900">Side Table</h4>
-                                        <p class="text-[10px] text-zinc-400">하이엔드 3D 에셋</p>
-                                    </div>
-                                </div>
-                                <button onclick="toggleTableAsset()" id="table-toggle-btn" class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm">
-                                    배치하기 (ON)
-                                </button>
-                            </div>
-
-                            <!-- 방 내부 그리드 이동 및 90도 회전 컨트롤 패널 -->
-                            <div id="table-controls-panel" class="hidden space-y-2 pt-2 border-t border-zinc-200">
-                                <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium">
-                                    <span>방 내부 위치 이동 (그리드):</span>
-                                    <div class="grid grid-cols-2 gap-1">
-                                        <button onclick="moveTablePosition('IN')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬆ 안쪽</button>
-                                        <button onclick="moveTablePosition('OUT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬇ 바깥쪽</button>
-                                        <button onclick="moveTablePosition('LEFT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬅ 왼쪽</button>
-                                        <button onclick="moveTablePosition('RIGHT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">➡ 오른쪽</button>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium pt-1">
-                                    <span>Z축 고정 90도 회전:</span>
-                                    <button onclick="rotateTable90()" class="px-3 py-1 bg-amber-500 text-zinc-950 font-bold rounded-lg shadow-sm hover:bg-amber-400 transition">
-                                        🔄 90° 회전
-                                    </button>
-                                </div>
-                            </div>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">가구 에셋 라이브러리</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addFurnitureAsset('SIDETABLE.glb', 'Side Table')" class="p-2.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-900 rounded-xl text-left transition group">
+                                <div class="text-xs font-bold text-zinc-900 group-hover:text-amber-600">🪑 Side Table</div>
+                                <div class="text-[10px] text-zinc-400 mt-0.5">사이드 테이블</div>
+                            </button>
+                            <button onclick="addFurnitureAsset('BED.glb', 'Bed')" class="p-2.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-900 rounded-xl text-left transition group">
+                                <div class="text-xs font-bold text-zinc-900 group-hover:text-amber-600">🛏️ Bed</div>
+                                <div class="text-[10px] text-zinc-400 mt-0.5">침대 에셋</div>
+                            </button>
+                            <button onclick="addFurnitureAsset('ROUNDTABLE.glb', 'Round Table')" class="p-2.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-900 rounded-xl text-left transition group">
+                                <div class="text-xs font-bold text-zinc-900 group-hover:text-amber-600">🪵 Round Table</div>
+                                <div class="text-[10px] text-zinc-400 mt-0.5">원형 테이블</div>
+                            </button>
+                            <button onclick="addFurnitureAsset('SOFA2.glb', 'Sofa 02')" class="p-2.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-900 rounded-xl text-left transition group">
+                                <div class="text-xs font-bold text-zinc-900 group-hover:text-amber-600">🛋️ Sofa 02</div>
+                                <div class="text-[10px] text-zinc-400 mt-0.5">라운지 소파</div>
+                            </button>
                         </div>
                     </div>
 
+                    <!-- 💡 선택된 가구 제어 패널 (이동 및 90도 회전) -->
+                    <div id="active-furniture-controls" class="hidden bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-3">
+                        <div class="flex items-center justify-between border-b border-zinc-200 pb-2">
+                            <span id="selected-furniture-name" class="text-xs font-bold text-amber-600">선택된 가구</span>
+                            <span class="text-[10px] text-zinc-400">그리드 이동 / 회전</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium">
+                            <span>위치 이동:</span>
+                            <div class="grid grid-cols-2 gap-1">
+                                <button onclick="moveSelectedFurniture('IN')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬆ 안쪽</button>
+                                <button onclick="moveSelectedFurniture('OUT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬇ 바깥쪽</button>
+                                <button onclick="moveSelectedFurniture('LEFT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">⬅ 왼쪽</button>
+                                <button onclick="moveSelectedFurniture('RIGHT')" class="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 rounded font-bold">➡ 오른쪽</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-zinc-600 font-medium pt-1">
+                            <span>Z축 고정 회전:</span>
+                            <button onclick="rotateSelectedFurniture()" class="px-3 py-1 bg-amber-500 text-zinc-950 font-bold rounded-lg shadow-sm hover:bg-amber-400 transition">
+                                🔄 90° 회전
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 💡 배치된 가구 목록 관리 -->
                     <div class="space-y-3">
-                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 관리</label>
-                        <div id="interior-objects-list" class="space-y-3">
-                            <p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위 버튼을 눌러 추가하세요.</p>
+                        <label class="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">배치된 가구 목록 (클릭하여 선택)</label>
+                        <div id="interior-objects-list" class="space-y-2">
+                            <p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위에서 추가하세요.</p>
                         </div>
                     </div>
                 </div>
@@ -289,7 +298,7 @@
             </aside>
             <div class="flex-1 relative bg-zinc-950">
                 <div class="absolute top-4 left-4 z-10 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-zinc-800 text-xs text-zinc-400">
-                    <span>💡 하이엔드 톤매핑 & 소프트 그림자 렌더링 활성화</span>
+                    <span>💡 멀티 가구 배치 & 투명 그리드 시스템 활성화</span>
                 </div>
                 <div id="interior-canvas-container" class="w-full h-full cursor-grab"></div>
             </div>
@@ -653,11 +662,11 @@
             }
         }
 
-        // --- 3. Interior Page (하이엔드 톤매핑 및 그림자 적용) ---
+        // --- 3. Interior Page (다중 가구 관리 및 멀티 배치 시스템) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
-        let tableModel = null; 
-        let isTableActive = false; 
+        let placedFurnitureList = []; // 💡 배치된 모든 가구 객체들을 담는 배열
+        let selectedFurniture = null;   // 💡 현재 조작 중인 가구
         let transparentGridHelper = null; 
         let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, floorY: 0 }; 
         
@@ -682,7 +691,6 @@
             intCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
             intCamera.position.set(6, 4, 8);
 
-            // 💡 렌더러 생성 시 하이엔드 톤 매핑 및 그림자 맵 활성화
             intRenderer = new THREE.WebGLRenderer({ antialias: true });
             intRenderer.setSize(container.clientWidth, container.clientHeight);
             intRenderer.shadowMap.enabled = true;
@@ -694,7 +702,6 @@
             intAmbientLight = new THREE.AmbientLight(0xffffff, 1.2);
             intScene.add(intAmbientLight);
 
-            // 💡 그림자를 생성하는 메인 조명 설정
             intDirLight = new THREE.DirectionalLight(0xffffff, 1.8);
             intDirLight.position.set(5, 10, 5);
             intDirLight.castShadow = true;
@@ -703,7 +710,6 @@
             intDirLight.shadow.bias = -0.0001;
             intScene.add(intDirLight);
 
-            // 1. 방 뼈대 3D_ROOM.glb 로드 및 그림자 받기 설정
             const loader = new THREE.GLTFLoader();
             loader.load(
                 '3D_ROOM.glb',
@@ -738,7 +744,7 @@
                     
                     glbRoomModel.traverse((child) => {
                         if (child.isMesh) {
-                            child.receiveShadow = true; // 💡 방 전체가 그림자를 받도록 설정
+                            child.receiveShadow = true; 
                             const nameUpper = child.name.toUpperCase();
                             
                             if (!nameUpper.includes('GLASS') && !nameUpper.includes('WINDOW')) {
@@ -765,10 +771,12 @@
                         }
                     });
 
-                    if (isTableActive && tableModel) {
-                        intScene.add(tableModel);
-                        updateTableFloorPosition();
+                    // 이미 추가된 가구들이 있다면 씬에 재배치
+                    if (placedFurnitureList.length > 0) {
                         if(transparentGridHelper) transparentGridHelper.visible = true;
+                        placedFurnitureList.forEach(item => {
+                            intScene.add(item.model);
+                        });
                     }
                 },
                 undefined,
@@ -863,91 +871,125 @@
             });
         }
 
-        // --- 💡 SIDETABLE.glb 토글 및 그림자 부여 시스템 ---
-        function toggleTableAsset() {
-            const btn = document.getElementById('table-toggle-btn');
-            const listContainer = document.getElementById('interior-objects-list');
-            const controlPanel = document.getElementById('table-controls-panel');
+        // --- 💡 멀티 가구 에셋 추가 및 관리 시스템 ---
+        function addFurnitureAsset(fileName, displayName) {
+            const loader = new THREE.GLTFLoader();
+            loader.load(fileName, function (gltf) {
+                const model = gltf.scene;
 
-            if (!isTableActive) {
-                const loader = new THREE.GLTFLoader();
-                loader.load('SIDETABLE.glb', function (gltf) {
-                    tableModel = gltf.scene;
-
-                    // 💡 테이블 에셋의 모든 메시에 그림자 생성(cast) 및 수신(receive) 세팅 부여
-                    tableModel.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-
-                    updateTableFloorPosition();
-
-                    intScene.add(tableModel);
-                    isTableActive = true;
-
-                    if(transparentGridHelper) transparentGridHelper.visible = true;
-                    controlPanel.classList.remove('hidden');
-
-                    btn.innerText = '제거하기 (OFF)';
-                    btn.className = 'px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition shadow-sm';
-
-                    listContainer.innerHTML = `
-                        <div class="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex items-center justify-between">
-                            <span class="text-xs font-bold text-zinc-800">SIDETABLE (하이엔드 에셋)</span>
-                            <button onclick="toggleTableAsset()" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
-                        </div>
-                    `;
-                }, undefined, function (error) {
-                    console.error('SIDETABLE.glb 로드 실패:', error);
-                    alert('SIDETABLE.glb 파일을 불러오는 데 실패했습니다. 파일명을 다시 확인해주세요.');
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
                 });
-            } else {
-                if (tableModel) {
-                    intScene.remove(tableModel);
-                }
-                isTableActive = false;
 
-                if(transparentGridHelper) transparentGridHelper.visible = false;
-                controlPanel.classList.add('hidden');
-
-                btn.innerText = '배치하기 (ON)';
-                btn.className = 'px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 transition shadow-sm';
+                // 고유 ID 생성
+                const uniqueId = 'furn_' + Date.now();
                 
-                listContainer.innerHTML = `<p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위 버튼을 눌러 추가하세요.</p>`;
+                // 바닥 밀착 계산
+                const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
+                const modelBox = new THREE.Box3().setFromObject(model);
+                model.position.set(0, roomBox.min.y - modelBox.min.y, 0);
+
+                intScene.add(model);
+                if(transparentGridHelper) transparentGridHelper.visible = true;
+
+                // 배열에 등록
+                const furnitureItem = {
+                    id: uniqueId,
+                    name: displayName,
+                    model: model
+                };
+                placedFurnitureList.push(furnitureItem);
+
+                // 방금 추가한 가구를 곧바로 선택 상태로 지정
+                selectFurniture(uniqueId);
+                updateFurnitureListUI();
+
+            }, undefined, function (error) {
+                console.error(`${fileName} 로드 실패:`, error);
+                alert(`${fileName} 파일을 불러오는 데 실패했습니다. 파일명을 다시 확인해주세요.`);
+            });
+        }
+
+        function selectFurniture(id) {
+            selectedFurniture = placedFurnitureList.find(item => item.id === id);
+            const controlPanel = document.getElementById('active-furniture-controls');
+            const nameLabel = document.getElementById('selected-furniture-name');
+
+            if (selectedFurniture) {
+                controlPanel.classList.remove('hidden');
+                nameLabel.innerText = `선택됨: ${selectedFurniture.name}`;
+            } else {
+                controlPanel.classList.add('hidden');
             }
+            updateFurnitureListUI();
         }
 
-        function updateTableFloorPosition() {
-            if (!tableModel || !glbRoomModel) return;
-
-            const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
-            const tableBox = new THREE.Box3().setFromObject(tableModel);
-
-            tableModel.position.set(0, roomBox.min.y - tableBox.min.y, 0);
+        function removeFurniture(id, event) {
+            event.stopPropagation();
+            const index = placedFurnitureList.findIndex(item => item.id === id);
+            if (index !== -1) {
+                intScene.remove(placedFurnitureList[index].model);
+                if (selectedFurniture && selectedFurniture.id === id) {
+                    selectedFurniture = null;
+                    document.getElementById('active-furniture-controls').classList.add('hidden');
+                }
+                placedFurnitureList.splice(index, 1);
+            }
+            if (placedFurnitureList.length === 0 && transparentGridHelper) {
+                transparentGridHelper.visible = false;
+            }
+            updateFurnitureListUI();
         }
 
-        function moveTablePosition(direction) {
-            if (!tableModel) return;
+        function updateFurnitureListUI() {
+            const listContainer = document.getElementById('interior-objects-list');
+            if (placedFurnitureList.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-zinc-400 italic">배치된 가구가 없습니다. 위에서 추가하세요.</p>`;
+                return;
+            }
+
+            let html = '';
+            placedFurnitureList.forEach(item => {
+                const isSelected = selectedFurniture && selectedFurniture.id === item.id;
+                const borderClass = isSelected ? 'border-amber-500 bg-amber-50/50' : 'border-zinc-200 bg-zinc-50';
+                
+                html += `
+                    <div onclick="selectFurniture('${item.id}')" class="cursor-pointer border ${borderClass} rounded-xl p-2.5 flex items-center justify-between transition hover:border-zinc-900">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs">🪑</span>
+                            <span class="text-xs font-bold text-zinc-800">${item.name}</span>
+                        </div>
+                        <button onclick="removeFurniture('${item.id}', event)" class="text-[10px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 bg-red-50 rounded">삭제</button>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        function moveSelectedFurniture(direction) {
+            if (!selectedFurniture) return;
             const step = 0.3; 
+            const model = selectedFurniture.model;
 
-            if (direction === 'IN') tableModel.position.z -= step;
-            if (direction === 'OUT') tableModel.position.z += step;
-            if (direction === 'LEFT') tableModel.position.x -= step;
-            if (direction === 'RIGHT') tableModel.position.x += step;
+            if (direction === 'IN') model.position.z -= step;
+            if (direction === 'OUT') model.position.z += step;
+            if (direction === 'LEFT') model.position.x -= step;
+            if (direction === 'RIGHT') model.position.x += step;
 
-            tableModel.position.x = Math.max(roomBounds.minX, Math.min(roomBounds.maxX, tableModel.position.x));
-            tableModel.position.z = Math.max(roomBounds.minZ, Math.min(roomBounds.maxZ, tableModel.position.z));
+            model.position.x = Math.max(roomBounds.minX, Math.min(roomBounds.maxX, model.position.x));
+            model.position.z = Math.max(roomBounds.minZ, Math.min(roomBounds.maxZ, model.position.z));
         }
 
-        function rotateTable90() {
-            if (!tableModel) return;
-            tableModel.rotation.y += Math.PI / 2;
+        function rotateSelectedFurniture() {
+            if (!selectedFurniture) return;
+            selectedFurniture.model.rotation.y += Math.PI / 2;
         }
 
         function saveInteriorProject() {
-            alert('SIDETABLE 에셋이 포함된 인테리어 스튜디오 디자인이 성공적으로 저장되었습니다!');
+            alert(`총 ${placedFurnitureList.length개의 가구 에셋이 포함된 인테리어 디자인이 성공적으로 저장되었습니다!`);
             switchPage('exhibition');
         }
 
