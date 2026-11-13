@@ -665,8 +665,8 @@
         // --- 3. Interior Page (다중 가구 관리 및 멀티 배치 시스템) ---
         let intScene, intCamera, intRenderer;
         let glbRoomModel = null;
-        let placedFurnitureList = []; // 💡 배치된 모든 가구 객체들을 담는 배열
-        let selectedFurniture = null;   // 💡 현재 조작 중인 가구
+        let placedFurnitureList = []; 
+        let selectedFurniture = null;   
         let transparentGridHelper = null; 
         let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, floorY: 0 }; 
         
@@ -771,7 +771,6 @@
                         }
                     });
 
-                    // 이미 추가된 가구들이 있다면 씬에 재배치
                     if (placedFurnitureList.length > 0) {
                         if(transparentGridHelper) transparentGridHelper.visible = true;
                         placedFurnitureList.forEach(item => {
@@ -871,7 +870,6 @@
             });
         }
 
-        // --- 💡 멀티 가구 에셋 추가 및 관리 시스템 ---
         function addFurnitureAsset(fileName, displayName) {
             const loader = new THREE.GLTFLoader();
             loader.load(fileName, function (gltf) {
@@ -884,10 +882,8 @@
                     }
                 });
 
-                // 고유 ID 생성
                 const uniqueId = 'furn_' + Date.now();
                 
-                // 바닥 밀착 계산
                 const roomBox = new THREE.Box3().setFromObject(glbRoomModel);
                 const modelBox = new THREE.Box3().setFromObject(model);
                 model.position.set(0, roomBox.min.y - modelBox.min.y, 0);
@@ -895,7 +891,6 @@
                 intScene.add(model);
                 if(transparentGridHelper) transparentGridHelper.visible = true;
 
-                // 배열에 등록
                 const furnitureItem = {
                     id: uniqueId,
                     name: displayName,
@@ -903,7 +898,6 @@
                 };
                 placedFurnitureList.push(furnitureItem);
 
-                // 방금 추가한 가구를 곧바로 선택 상태로 지정
                 selectFurniture(uniqueId);
                 updateFurnitureListUI();
 
@@ -989,7 +983,7 @@
         }
 
         function saveInteriorProject() {
-            alert(`총 ${placedFurnitureList.length개의 가구 에셋이 포함된 인테리어 디자인이 성공적으로 저장되었습니다!`);
+            alert('인테리어 디자인이 성공적으로 저장되었습니다!'); // 💡 문법 에러 수정 완료
             switchPage('exhibition');
         }
 
